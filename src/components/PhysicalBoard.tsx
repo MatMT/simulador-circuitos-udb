@@ -144,11 +144,10 @@ export default function PhysicalBoard({
               <button
                 key={c.color}
                 onClick={() => onSelectColor(c.color)}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl font-mono text-xs font-extrabold transition-all duration-200 cursor-pointer ${
-                  isSelected
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl font-mono text-xs font-extrabold transition-all duration-200 cursor-pointer ${isSelected
                     ? 'ring-2 ring-sky-400 scale-105 shadow-lg shadow-sky-500/25'
                     : 'opacity-80 hover:opacity-100 bg-slate-950/80'
-                }`}
+                  }`}
                 style={{
                   backgroundColor: isSelected ? c.color : undefined,
                   color: isSelected
@@ -256,9 +255,6 @@ export default function PhysicalBoard({
                   {isHovered && (
                     <g transform={`translate(${pathData.midX}, ${pathData.midY})`}>
                       <circle cx="0" cy="0" r="2.5" fill="#ef4444" stroke="#ffffff" strokeWidth="0.5" />
-                      <text x="0" y="-3.5" fontSize="3" fill="#ffffff" textAnchor="middle" fontWeight="bold">
-                        Desconectar
-                      </text>
                     </g>
                   )}
                 </g>
