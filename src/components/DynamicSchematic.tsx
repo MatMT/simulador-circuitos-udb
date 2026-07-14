@@ -7,6 +7,7 @@ import { analyzeTopology } from '../utils/topologyAnalyzer';
 import { verifyKirchhoffAndOhm } from '../utils/kirchhoffAnalyzer';
 import TopologyStatusPanel from './analysis/TopologyStatusPanel';
 import KirchhoffLawsPanel from './analysis/KirchhoffLawsPanel';
+import FlowSchematic from './schematic/FlowSchematic';
 import { Activity, Sliders, Cpu, AlertTriangle, Network, ShieldCheck } from 'lucide-react';
 
 interface DynamicSchematicProps {
@@ -23,6 +24,7 @@ export default function DynamicSchematic({
   setVin
 }: DynamicSchematicProps) {
   const [activeTab, setActiveTab] = useState<'live_mirror' | 'topology' | 'kirchhoff' | 'measurements'>('live_mirror');
+  const [diagramEngine, setDiagramEngine] = useState<'reactflow' | 'blueprint'>('reactflow');
   const [hoveredElement, setHoveredElement] = useState<{ type: 'resistor' | 'wire'; id: string } | null>(null);
 
   const topology = analyzeTopology(wires, vin);
@@ -132,18 +134,48 @@ export default function DynamicSchematic({
               </div>
             )}
 
-            {/* REAL GRAPHICAL SVG CIRCUIT SCHEMATIC CANVAS */}
+            {/* REAL GRAPHICAL OR REACT FLOW SCHEMATIC CANVAS */}
             <div className="bg-slate-950 border border-sky-500/40 rounded-2xl p-4 flex flex-col gap-3 shadow-2xl">
-              <div className="flex items-center justify-between border-b border-slate-800 pb-2">
-                <h4 className="font-mono text-xs font-bold text-sky-400 uppercase tracking-wider flex items-center gap-1.5">
-                  <span>⚡ Diagrama Renderizado de Conexión ({topology.type})</span>
-                </h4>
-                <span className="font-mono text-[11px] text-slate-400">
+              <div className="flex items-center justify-between border-b border-slate-800 pb-2 flex-wrap gap-3">
+                <div className="flex items-center gap-3 flex-wrap">
+                  <h4 className="font-mono text-xs font-bold text-sky-400 uppercase tracking-wider flex items-center gap-1.5">
+                    <span>⚡ Diagrama de Conexión ({topology.type})</span>
+                  </h4>
+                  <div className="flex items-center bg-slate-900 border border-slate-800 rounded-lg p-0.5 shadow-inner">
+                    <button
+                      onClick={() => setDiagramEngine('reactflow')}
+                      className={`px-3 py-1 rounded-md font-mono text-[11px] font-extrabold transition cursor-pointer flex items-center gap-1.5 ${
+                        diagramEngine === 'reactflow'
+                          ? 'bg-sky-600 text-white shadow-md shadow-sky-500/30'
+                          : 'text-slate-400 hover:text-white hover:bg-slate-800/50'
+                      }`}
+                    >
+                      <span>⚡ React Flow Orgánico (@xyflow)</span>
+                    </button>
+                    <button
+                      onClick={() => setDiagramEngine('blueprint')}
+                      className={`px-3 py-1 rounded-md font-mono text-[11px] font-extrabold transition cursor-pointer flex items-center gap-1.5 ${
+                        diagramEngine === 'blueprint'
+                          ? 'bg-sky-600 text-white shadow-md shadow-sky-500/30'
+                          : 'text-slate-400 hover:text-white hover:bg-slate-800/50'
+                      }`}
+                    >
+                      <span>📐 Blueprint 2D</span>
+                    </button>
+                  </div>
+                </div>
+                <span className="font-mono text-[11px] text-slate-400 bg-slate-900 px-2.5 py-0.5 rounded border border-slate-800">
                   {topology.connectedResistors.length} / 9 Componentes en Pista
                 </span>
               </div>
 
-              {topology.connectedResistors.length === 0 ? (
+              {diagramEngine === 'reactflow' ? (
+                <FlowSchematic
+                  topology={topology}
+                  analysis={analysis}
+                  vin={vin}
+                />
+              ) : topology.connectedResistors.length === 0 ? (
                 <div className="text-center py-12 px-4 text-slate-500 font-mono text-xs flex flex-col items-center gap-2 bg-slate-900/40 rounded-xl border border-dashed border-slate-800">
                   <Activity size={40} className="text-sky-400/40 mb-1" />
                   <p className="text-slate-300 font-bold text-sm">Lienzo Esquemático Limpio</p>

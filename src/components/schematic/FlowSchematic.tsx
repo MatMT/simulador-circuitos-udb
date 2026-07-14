@@ -393,16 +393,20 @@ export default function FlowSchematic({
   }
 
   return (
-    <div className="w-full h-[400px] bg-[#050914] border border-slate-800 rounded-2xl overflow-hidden relative shadow-2xl">
+    <div
+      className="w-full bg-[#050914] border border-slate-800 rounded-2xl overflow-hidden relative shadow-2xl"
+      style={{ width: '100%', height: '460px', minHeight: '460px' }}
+    >
       <ReactFlow
         nodes={nodes}
         edges={edges}
         nodeTypes={nodeTypes}
         fitView
-        fitViewOptions={{ padding: 0.25 }}
-        minZoom={0.3}
-        maxZoom={1.8}
+        fitViewOptions={{ padding: 0.25, duration: 300 }}
+        minZoom={0.25}
+        maxZoom={2.0}
         proOptions={{ hideAttribution: true }}
+        style={{ width: '100%', height: '100%' }}
       >
         <Background variant={BackgroundVariant.Dots} gap={18} size={1.5} color="#1e293b" />
         <Controls
@@ -426,7 +430,7 @@ export default function FlowSchematic({
       {/* Floating status badge inside canvas */}
       <div className="absolute bottom-3 left-3 z-10 pointer-events-none bg-slate-900/90 backdrop-blur border border-slate-800 px-3 py-1.5 rounded-xl flex items-center gap-2.5 font-mono text-[11px] shadow-lg">
         <span className="text-slate-400">Motor:</span>
-        <strong className="text-sky-400">React Flow Organic</strong>
+        <strong className="text-sky-400">React Flow Organic (@xyflow/react)</strong>
         <span className="text-slate-600">|</span>
         <span className="text-slate-400">Nodos activos:</span>
         <strong className="text-emerald-400">{nodes.length}</strong>
