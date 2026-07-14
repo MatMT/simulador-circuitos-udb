@@ -10,10 +10,10 @@ export const UDB_RESISTORS: Resistor[] = [
   { id: 'R3', label: 'R3 (680Ω)', value: 680, x: 12, y: 50, width: 7, height: 16, orientation: 'vertical', terminals: ['R3_T1', 'R3_T2'] },
   { id: 'R4', label: 'R4 (680Ω)', value: 680, x: 38, y: 50, width: 7, height: 16, orientation: 'vertical', terminals: ['R4_T1', 'R4_T2'] },
   { id: 'R8', label: 'R8 (1.5kΩ)', value: 1500, x: 25, y: 76, width: 14, height: 7, orientation: 'horizontal', terminals: ['R8_T1', 'R8_T2'] },
-  
+
   // ================= COLUMNA CENTRAL (R5) =================
   { id: 'R5', label: 'R5 (220Ω)', value: 220, x: 50, y: 50, width: 7, height: 18, orientation: 'vertical', terminals: ['R5_T1', 'R5_T2'] },
-  
+
   // ================= BLOQUE 2 (Derecha: R2, R6, R7, R9) =================
   { id: 'R2', label: 'R2 (220Ω)', value: 220, x: 75, y: 24, width: 14, height: 7, orientation: 'horizontal', terminals: ['R2_T1', 'R2_T2'] },
   { id: 'R6', label: 'R6 (1.5kΩ)', value: 1500, x: 62, y: 50, width: 7, height: 16, orientation: 'vertical', terminals: ['R6_T1', 'R6_T2'] },
@@ -28,7 +28,7 @@ export const UDB_TERMINALS: Terminal[] = [
   // Power Supply Red (+) & Black (-) inputs
   { id: 'POWER_POS', label: 'Fuente 1 (+)', type: 'power_pos', x: 8, y: 10 },
   { id: 'POWER_NEG', label: 'Fuente 2 (-)', type: 'power_neg', x: 92, y: 10 },
-  
+
   // Bloque 1 Terminals
   { id: 'R1_T1', resistorId: 'R1', label: 'R1 (+)', type: 'resistor', x: 17, y: 24 },
   { id: 'R1_T2', resistorId: 'R1', label: 'R1 (-)', type: 'resistor', x: 33, y: 24 },
@@ -38,11 +38,11 @@ export const UDB_TERMINALS: Terminal[] = [
   { id: 'R4_T2', resistorId: 'R4', label: 'R4 (-)', type: 'resistor', x: 38, y: 62 },
   { id: 'R8_T1', resistorId: 'R8', label: 'R8 (+)', type: 'resistor', x: 17, y: 76 },
   { id: 'R8_T2', resistorId: 'R8', label: 'R8 (-)', type: 'resistor', x: 33, y: 76 },
-  
+
   // Columna Central Terminals
   { id: 'R5_T1', resistorId: 'R5', label: 'R5 (+)', type: 'resistor', x: 50, y: 36 },
   { id: 'R5_T2', resistorId: 'R5', label: 'R5 (-)', type: 'resistor', x: 50, y: 64 },
-  
+
   // Bloque 2 Terminals
   { id: 'R2_T1', resistorId: 'R2', label: 'R2 (+)', type: 'resistor', x: 67, y: 24 },
   { id: 'R2_T2', resistorId: 'R2', label: 'R2 (-)', type: 'resistor', x: 83, y: 24 },
@@ -67,17 +67,17 @@ export function getResistorById(id: ResistorId): Resistor {
 // Union-Find algorithm to cluster connected terminals into electrical nodes with GUARANTEED UNIQUE KEYS
 export function buildNodes(wires: Wire[]): ElectricalNode[] {
   const parent: Record<string, string> = {};
-  
+
   UDB_TERMINALS.forEach(t => {
     parent[t.id] = t.id;
   });
-  
+
   function find(i: string): string {
     if (parent[i] === i) return i;
     parent[i] = find(parent[i]);
     return parent[i];
   }
-  
+
   function union(i: string, j: string) {
     const rootI = find(i);
     const rootJ = find(j);
@@ -85,13 +85,13 @@ export function buildNodes(wires: Wire[]): ElectricalNode[] {
       parent[rootI] = rootJ;
     }
   }
-  
+
   wires.forEach(w => {
     if (parent[w.fromTerminalId] && parent[w.toTerminalId]) {
       union(w.fromTerminalId, w.toTerminalId);
     }
   });
-  
+
   // Group terminals by root
   const groups: Record<string, string[]> = {};
   UDB_TERMINALS.forEach(t => {
@@ -99,14 +99,14 @@ export function buildNodes(wires: Wire[]): ElectricalNode[] {
     if (!groups[root]) groups[root] = [];
     groups[root].push(t.id);
   });
-  
+
   // Filter out standalone unconnected resistor terminals so we focus on active electrical nodes or show all uniquely
   const activeRoots = Object.values(groups).filter(tIds => {
     return tIds.length > 1 || tIds.includes('POWER_POS') || tIds.includes('POWER_NEG');
   });
 
   const nodes: ElectricalNode[] = activeRoots.map((tIds, idx) => {
-    let prefix = `Nodo #${idx + 1}`;
+    const prefix = `Nodo #${idx + 1}`;
     let summary = "";
     if (tIds.includes('POWER_POS')) {
       summary = "Alimentación (+)";
@@ -138,7 +138,7 @@ export function buildNodes(wires: Wire[]): ElectricalNode[] {
       voltage: 0
     };
   });
-  
+
   return nodes;
 }
 
@@ -147,8 +147,8 @@ export function solveCircuit(wires: Wire[], vin: number = 12): CircuitAnalysisRe
   const nodes = buildNodes(wires);
   const posNode = nodes.find(n => n.terminalIds.includes('POWER_POS'));
   const negNode = nodes.find(n => n.terminalIds.includes('POWER_NEG'));
-  
-  const measurements: Record<ResistorId, ResistorMeasurement> = {} as any;
+
+  const measurements: Record<ResistorId, ResistorMeasurement> = {} as Record<ResistorId, ResistorMeasurement>;
   UDB_RESISTORS.forEach(r => {
     measurements[r.id] = { resistorId: r.id, voltageDrop: 0, current: 0, power: 0 };
   });
@@ -156,7 +156,7 @@ export function solveCircuit(wires: Wire[], vin: number = 12): CircuitAnalysisRe
   const emptyStatus = {
     isCorrect: false,
     nodeDetails: [],
-    generalFeedback: wires.length === 0 ? 'Circuito completamente limpio (0 ejemplos). Conecta componentes para iniciar la simulación.' : 'Analizando conexiones del circuito...'
+    generalFeedback: wires.length === 0 ? 'Circuito completamente limpio . Conecta componentes para iniciar la simulación.' : 'Analizando conexiones del circuito...'
   };
 
   if (!posNode || !negNode) {
@@ -190,7 +190,7 @@ export function solveCircuit(wires: Wire[], vin: number = 12): CircuitAnalysisRe
   const voltages = new Array(numNodes).fill(0);
   const negIdx = nodes.indexOf(negNode);
   const posIdx = nodes.indexOf(posNode);
-  
+
   voltages[posIdx] = vin;
   voltages[negIdx] = 0;
 
@@ -199,15 +199,15 @@ export function solveCircuit(wires: Wire[], vin: number = 12): CircuitAnalysisRe
     let maxDiff = 0;
     for (let i = 0; i < numNodes; i++) {
       if (i === posIdx || i === negIdx) continue;
-      
+
       let sumCond = 0;
       let sumCondVolt = 0;
-      
+
       const node_i = nodes[i];
       node_i.resistorConnections.forEach(conn => {
         const r = getResistorById(conn.resistorId);
         const cond = 1.0 / r.value;
-        
+
         const oppTermId = conn.terminalIndex === 0 ? `${r.id}_T2` : `${r.id}_T1`;
         const oppNode = nodes.find(n => n.terminalIds.includes(oppTermId));
         if (oppNode) {
@@ -216,7 +216,7 @@ export function solveCircuit(wires: Wire[], vin: number = 12): CircuitAnalysisRe
           sumCondVolt += cond * voltages[oppIdx];
         }
       });
-      
+
       if (sumCond > 0) {
         const newV = sumCondVolt / sumCond;
         maxDiff = Math.max(maxDiff, Math.abs(newV - voltages[i]));
@@ -231,16 +231,16 @@ export function solveCircuit(wires: Wire[], vin: number = 12): CircuitAnalysisRe
   });
 
   let totalCurrent = 0;
-  
+
   UDB_RESISTORS.forEach(r => {
     const t1Node = nodes.find(n => n.terminalIds.includes(`${r.id}_T1`));
     const t2Node = nodes.find(n => n.terminalIds.includes(`${r.id}_T2`));
-    
+
     if (t1Node && t2Node && t1Node !== t2Node) {
       const vDrop = Math.abs(t1Node.voltage - t2Node.voltage);
       const current_mA = (vDrop / r.value) * 1000;
       const power_mW = vDrop * current_mA;
-      
+
       measurements[r.id] = {
         resistorId: r.id,
         voltageDrop: Number(vDrop.toFixed(3)),

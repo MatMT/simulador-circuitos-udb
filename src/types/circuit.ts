@@ -30,7 +30,7 @@ export interface Wire {
   color: WireColor;
   label?: string;
   order: number; // For rendering multiple stacked banana plugs cleanly
-  layer?: 1 | 2 | 3; // Nivel de Altura / Capa Z del Cable: 1 = Nivel Base, 2 = Nivel N+1 (Paralelo Superior), 3 = Nivel N+2 (Puente Aéreo)
+  layer?: number; // Nivel de Altura / Capa Z del Cable dinámico según cables apilados en el borne
 }
 
 export interface ElectricalNode {

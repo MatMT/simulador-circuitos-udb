@@ -5,7 +5,7 @@ import PhysicalBoard from '../components/PhysicalBoard';
 import DynamicSchematic from '../components/DynamicSchematic';
 import { Wire, WireColor } from '../types/circuit';
 import { solveCircuit } from '../utils/circuitEngine';
-import { Zap, RotateCcw, Activity } from 'lucide-react';
+import { Zap, RotateCcw } from 'lucide-react';
 
 export default function Home() {
   // 0 ejemplos / 0 prearmado. Empieza 100% limpio como solicitó el usuario.
@@ -16,23 +16,29 @@ export default function Home() {
 
   const analysis = solveCircuit(wires, vin);
 
-  const handleAddWire = (fromId: string, toId: string, color: WireColor) => {
+  const handleAddWire = (fromId: string, toId: string, color: WireColor, customLayer?: number) => {
     if (fromId === toId) return;
 
-    const stackCount = wires.filter(w => 
-      w.fromTerminalId === fromId || w.toTerminalId === fromId || 
-      w.fromTerminalId === toId || w.toTerminalId === toId
-    ).length;
+    const fromStack = wires.filter(w => w.fromTerminalId === fromId || w.toTerminalId === fromId).length;
+    const toStack = wires.filter(w => w.fromTerminalId === toId || w.toTerminalId === toId).length;
+    const dynamicLayer = customLayer || Math.max(fromStack, toStack) + 1;
 
     const newWire: Wire = {
       id: `wire-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
       fromTerminalId: fromId,
       toTerminalId: toId,
       color,
-      order: stackCount
+      order: dynamicLayer - 1,
+      layer: dynamicLayer
     };
 
     setWires(prev => [...prev, newWire]);
+
+    // Cambio procedimental y rotativo automático del color de cable tras cada conexión
+    const proceduralSequence: WireColor[] = ['#ef4444', '#3b82f6', '#10b981', '#eab308', '#8b5cf6', '#f97316', '#111827'];
+    const currentIdx = proceduralSequence.indexOf(color);
+    const nextColor = currentIdx !== -1 ? proceduralSequence[(currentIdx + 1) % proceduralSequence.length] : proceduralSequence[0];
+    setSelectedColor(nextColor);
   };
 
   const handleRemoveWire = (wireId: string) => {
@@ -55,10 +61,10 @@ export default function Home() {
           <div>
             <div className="header-title">
               <span>UNIVERSIDAD DON BOSCO</span>
-              <span className="header-badge">Simulador Púramente Dinámico (0 Ejemplos)</span>
+              <span className="header-badge">Simulador Púramente Dinámico </span>
             </div>
             <div className="header-subtitle">
-              Módulo de 9 Resistencias — Simetría Estructural (Bloque 1, Columna 5, Bloque 2) y Conexión en Vivo
+              Módulo de 9 Resistencias —
             </div>
           </div>
         </div>
@@ -70,7 +76,7 @@ export default function Home() {
               {analysis.isComplete ? '● CERRADO Y MEDIDO EN VIVO' : '● CONECTANDO EN TABLERO ACRÍLICO'}
             </span>
           </div>
-          
+
           <button onClick={handleClearWires} className="btn btn-secondary" title="Limpiar todos los cables del tablero">
             <RotateCcw size={16} /> Limpiar Tablero
           </button>

@@ -1,13 +1,13 @@
 'use client';
 
 import React, { useState } from 'react';
-import { ResistorId, Terminal, Wire, WireColor } from '../types/circuit';
+import { Terminal, Wire, WireColor } from '../types/circuit';
 import { UDB_RESISTORS, UDB_TERMINALS, getTerminalById } from '../utils/circuitEngine';
-import { Zap, RotateCcw, Plug, Trash2, X, Info, Layers, ArrowUpCircle } from 'lucide-react';
+import { RotateCcw, Plug, Trash2, X, Info } from 'lucide-react';
 
 interface PhysicalBoardProps {
   wires: Wire[];
-  onAddWire: (fromId: string, toId: string, color: WireColor, layer?: 1 | 2 | 3) => void;
+  onAddWire: (fromId: string, toId: string, color: WireColor, layer?: number) => void;
   onRemoveWire: (wireId: string) => void;
   onClearWires: () => void;
   selectedColor: WireColor;
@@ -19,12 +19,12 @@ interface PhysicalBoardProps {
 
 const WIRE_COLORS: { color: WireColor; label: string; name: string }[] = [
   { color: '#ef4444', label: 'Rojo', name: 'Alimentación (+)' },
-  { color: '#111827', label: 'Negro', name: 'Tierra / Retorno (-)' },
+  { color: '#3b82f6', label: 'Azul', name: 'Lazo Superior' },
   { color: '#10b981', label: 'Verde', name: 'Derivación Paralela' },
   { color: '#eab308', label: 'Amarillo', name: 'Puente Central' },
-  { color: '#3b82f6', label: 'Azul', name: 'Lazo Superior' },
   { color: '#8b5cf6', label: 'Morado', name: 'Lazo Inferior' },
-  { color: '#f97316', label: 'Naranja', name: 'Conexión Auxiliar' }
+  { color: '#f97316', label: 'Naranja', name: 'Conexión Auxiliar' },
+  { color: '#111827', label: 'Negro', name: 'Tierra / Retorno (-)' }
 ];
 
 export default function PhysicalBoard({
@@ -40,16 +40,15 @@ export default function PhysicalBoard({
   const [hoveredWireId, setHoveredWireId] = useState<string | null>(null);
   const [mousePos, setMousePos] = useState<{ x: number; y: number } | null>(null);
   const [inspectTerminalId, setInspectTerminalId] = useState<string | null>(null);
-  const [activeLayerFilter, setActiveLayerFilter] = useState<0 | 1 | 2 | 3>(0); // 0 = Todas, 1 = Nivel Base, 2 = Nivel N+1, 3 = Nivel N+2
-  const [selectedCreationLayer, setSelectedCreationLayer] = useState<1 | 2 | 3>(1); // Capa en la que se crearán nuevos cables
-  const [localWires, setLocalWires] = useState<Record<string, 1 | 2 | 3>>({}); // Override local de capas para interactividad rápida
+  const [activeLayerFilter] = useState<number>(0); // 0 = Todas las capas
+  const [localWires, setLocalWires] = useState<Record<string, number>>({}); // Override local de capas
 
   const handleTerminalClick = (terminalId: string, e: React.MouseEvent) => {
     e.stopPropagation();
-    
+
     // Check if clicking on the stack badge or terminal when >1 wire exists
     const stackCount = wires.filter(w => w.fromTerminalId === terminalId || w.toTerminalId === terminalId).length;
-    
+
     if (!activeTerminalId && stackCount >= 2 && (e.target as HTMLElement).closest('.stack-badge')) {
       setInspectTerminalId(terminalId);
       return;
@@ -60,14 +59,15 @@ export default function PhysicalBoard({
     } else if (activeTerminalId === terminalId) {
       setActiveTerminalId(null);
     } else {
-      onAddWire(activeTerminalId, terminalId, selectedColor, selectedCreationLayer);
+      // El cálculo de capa dinámica en paralelo se asigna automáticamente al conectar
+      onAddWire(activeTerminalId, terminalId, selectedColor);
       setActiveTerminalId(null);
     }
   };
 
   const getWirePath = (t1: Terminal, t2: Terminal, orderIndex: number = 0, totalOrders: number = 1, layer: number = 1) => {
     const stackOffset = (orderIndex * 6) - ((totalOrders - 1) * 3);
-    
+
     const x1 = t1.x;
     const y1 = t1.y;
     const x2 = t2.x;
@@ -76,13 +76,19 @@ export default function PhysicalBoard({
     const dx = x2 - x1;
     const dy = y2 - y1;
     const dist = Math.sqrt(dx * dx + dy * dy);
-    
-    // Calcular altura Z (sag) diferenciada por NIVEL para evitar cualquier cruce o confusión
+
+    // Altura Z dinámicamente alterna y escalonada por capa de apilamiento
     let sag = Math.min(24, dist * 0.25) + Math.abs(stackOffset);
     if (layer === 2) {
-      sag = -Math.min(38, dist * 0.38) - Math.abs(stackOffset); // Arco superior (Nivel N+1 Paralelo)
+      sag = -Math.min(38, dist * 0.38) - Math.abs(stackOffset); // Arco superior (Capa 2 Paralela)
     } else if (layer === 3) {
-      sag = -Math.min(62, dist * 0.55) - Math.abs(stackOffset); // Arco superior aéreo (Nivel N+2 Derivación)
+      sag = Math.min(48, dist * 0.48) + Math.abs(stackOffset); // Arco inferior profundo (Capa 3)
+    } else if (layer >= 4) {
+      const isEven = layer % 2 === 0;
+      const step = Math.floor(layer / 2) * 16;
+      sag = isEven
+        ? -Math.min(38 + step, dist * (0.38 + step * 0.005)) - Math.abs(stackOffset)
+        : Math.min(24 + step, dist * (0.25 + step * 0.005)) + Math.abs(stackOffset);
     }
 
     const cx1 = x1 + dx * 0.25;
@@ -107,8 +113,8 @@ export default function PhysicalBoard({
   const inspectedWires = inspectTerminalId ? wires.filter(w => w.fromTerminalId === inspectTerminalId || w.toTerminalId === inspectTerminalId) : [];
 
   const toggleWireLayerLocal = (wireId: string, currentLayer: number) => {
-    const nextLayer = currentLayer === 1 ? 2 : currentLayer === 2 ? 3 : 1;
-    setLocalWires(prev => ({ ...prev, [wireId]: nextLayer as 1 | 2 | 3 }));
+    const nextLayer = currentLayer + 1;
+    setLocalWires(prev => ({ ...prev, [wireId]: nextLayer }));
   };
 
   return (
@@ -118,38 +124,6 @@ export default function PhysicalBoard({
         <div className="toolbar-title flex items-center gap-2">
           <div className="pulse-dot" />
           <span className="font-bold text-sm tracking-wide text-slate-100">Tablero Acrílico UDB — Simetría & Control por Capas (+ / -)</span>
-        </div>
-
-        {/* LAYER SELECTOR AND FILTER TOOLBAR (As requested: "ordenando como por capas y mostrar niveles") */}
-        <div className="flex items-center gap-1.5 bg-slate-900 border border-slate-700/80 p-1 rounded-xl text-xs font-mono">
-          <span className="text-slate-400 px-2 flex items-center gap-1 font-bold">
-            <Layers size={14} className="text-sky-400" />
-            <span>Niveles Z:</span>
-          </span>
-          <button
-            onClick={() => setActiveLayerFilter(0)}
-            className={`px-2.5 py-1 rounded-lg font-bold transition ${activeLayerFilter === 0 ? 'bg-sky-600 text-white shadow' : 'text-slate-400 hover:text-white'}`}
-          >
-            ⚡ Todas ({wires.length})
-          </button>
-          <button
-            onClick={() => setActiveLayerFilter(1)}
-            className={`px-2.5 py-1 rounded-lg font-bold transition flex items-center gap-1 ${activeLayerFilter === 1 ? 'bg-emerald-600 text-white shadow' : 'text-emerald-400/80 hover:text-emerald-300'}`}
-          >
-            <span>● Nivel 1 Base ({wires.filter(w => (localWires[w.id] || w.layer || 1) === 1).length})</span>
-          </button>
-          <button
-            onClick={() => setActiveLayerFilter(2)}
-            className={`px-2.5 py-1 rounded-lg font-bold transition flex items-center gap-1 ${activeLayerFilter === 2 ? 'bg-amber-600 text-white shadow' : 'text-amber-400/80 hover:text-amber-300'}`}
-          >
-            <span>● Nivel 2 N+1 ({wires.filter(w => (localWires[w.id] || w.layer || 1) === 2).length})</span>
-          </button>
-          <button
-            onClick={() => setActiveLayerFilter(3)}
-            className={`px-2.5 py-1 rounded-lg font-bold transition flex items-center gap-1 ${activeLayerFilter === 3 ? 'bg-purple-600 text-white shadow' : 'text-purple-400/80 hover:text-purple-300'}`}
-          >
-            <span>● Nivel 3 N+2 ({wires.filter(w => (localWires[w.id] || w.layer || 1) === 3).length})</span>
-          </button>
         </div>
 
         <div className="toolbar-buttons flex gap-2">
@@ -165,11 +139,11 @@ export default function PhysicalBoard({
       </div>
 
       {/* Cable Color Selector Banner (LARGE EXPLICIT BUTTONS SO YOU CAN PICK ANY COLOR IMMEDIATELY!) */}
-      <div className="board-banner bg-slate-900/95 border border-sky-500/40 p-3 rounded-xl flex items-center justify-between flex-wrap gap-3 shadow-lg">
+      <div className="mx-5 mt-4 bg-slate-900/95 border border-sky-500/40 px-4 py-3 rounded-xl flex items-center justify-between flex-wrap gap-3 shadow-lg">
         <div className="flex items-center gap-2 text-xs font-bold text-slate-200">
           <Plug size={18} className="text-sky-400" />
           <span className="tracking-wide">Selecciona Color de Cable Jack Banana:</span>
-          
+
           {/* Active Terminal Pulse Notification */}
           {activeTerminalId && (
             <span className="ml-2 px-3 py-1 rounded-lg bg-amber-500/25 text-amber-300 border border-amber-500/50 animate-pulse text-xs font-mono">
@@ -177,7 +151,7 @@ export default function PhysicalBoard({
             </span>
           )}
         </div>
-        
+
         {/* Color Swatch Buttons */}
         <div className="flex flex-wrap items-center gap-2">
           {WIRE_COLORS.map(c => {
@@ -187,8 +161,8 @@ export default function PhysicalBoard({
                 key={c.color}
                 onClick={() => onSelectColor(c.color)}
                 className={`flex items-center gap-2 px-3 py-1.5 rounded-full font-mono text-xs font-extrabold transition transform hover:scale-105 shadow-md cursor-pointer ${isSelected ? 'ring-2 ring-white scale-105 shadow-lg shadow-sky-500/40' : 'opacity-85 hover:opacity-100'}`}
-                style={{ 
-                  backgroundColor: c.color, 
+                style={{
+                  backgroundColor: c.color,
                   color: c.color === '#eab308' || c.color === '#10b981' ? '#0f172a' : '#ffffff',
                   border: isSelected ? '2px solid #ffffff' : '2px solid rgba(255,255,255,0.25)'
                 }}
@@ -200,34 +174,11 @@ export default function PhysicalBoard({
             );
           })}
         </div>
-
-        {/* Cable Level Creation Selector */}
-        <div className="flex items-center gap-1.5 font-mono text-xs bg-slate-950 p-1 rounded-lg border border-slate-800">
-          <span className="text-slate-400 px-1.5">Conectar en:</span>
-          <button
-            onClick={() => setSelectedCreationLayer(1)}
-            className={`px-2 py-0.5 rounded font-bold ${selectedCreationLayer === 1 ? 'bg-emerald-600 text-white' : 'text-slate-400'}`}
-          >
-            L1 Base
-          </button>
-          <button
-            onClick={() => setSelectedCreationLayer(2)}
-            className={`px-2 py-0.5 rounded font-bold ${selectedCreationLayer === 2 ? 'bg-amber-600 text-white' : 'text-slate-400'}`}
-          >
-            L2 (N+1)
-          </button>
-          <button
-            onClick={() => setSelectedCreationLayer(3)}
-            className={`px-2 py-0.5 rounded font-bold ${selectedCreationLayer === 3 ? 'bg-purple-600 text-white' : 'text-slate-400'}`}
-          >
-            L3 (N+2)
-          </button>
-        </div>
       </div>
 
       {/* Interactive Board Viewport */}
-      <div 
-        className="board-viewport rounded-2xl overflow-hidden border-2 border-slate-800 shadow-2xl relative"
+      <div
+        className="board-viewport mx-5 mb-5 mt-2 rounded-2xl overflow-hidden border-2 border-slate-800 shadow-2xl relative flex-1 min-h-[460px]"
         onMouseMove={(e) => {
           if (activeTerminalId) {
             const plate = e.currentTarget.querySelector('.acrylic-plate');
@@ -242,12 +193,7 @@ export default function PhysicalBoard({
         }}
       >
         <div className="acrylic-plate">
-          
-          {/* Header Title on Acrylic Plate */}
-          <div className="acrylic-header">
-            <h1 className="acrylic-title font-black tracking-wider">UNIVERSIDAD DON BOSCO</h1>
-            <p className="acrylic-subtitle text-xs text-slate-400 font-mono">Módulo de 9 Resistencias — Simetría: Bloque 1 (1,3,4,8) | Columna (5) | Bloque 2 (2,6,7,9)</p>
-          </div>
+
 
           {/* SVG Wires Layer */}
           <svg className="board-svg-layer" style={{ zIndex: 20, pointerEvents: 'none' }} viewBox="0 0 100 100" preserveAspectRatio="none">
@@ -305,29 +251,18 @@ export default function PhysicalBoard({
                     style={{ pointerEvents: 'none' }}
                   />
 
-                  {/* LEVEL BADGE ON WIRE CURVE (Click to switch Nivel 1 -> Nivel 2 -> Nivel 3) */}
-                  <g 
-                    transform={`translate(${midX}, ${midY})`} 
-                    style={{ pointerEvents: 'auto', cursor: 'pointer' }}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      toggleWireLayerLocal(wire.id, effectiveLayer);
-                    }}
-                  >
-                    <rect 
-                      x="-8" y="-3.2" width="16" height="6.4" rx="2" 
-                      fill={effectiveLayer === 1 ? '#065f46' : effectiveLayer === 2 ? '#b45309' : '#6b21a8'} 
-                      stroke="#fff" strokeWidth="0.3"
-                    />
-                    <text textAnchor="middle" dy="1.1" fill="white" fontSize="2.5" fontWeight="900" fontFamily="monospace">
-                      {effectiveLayer === 1 ? 'L1 N' : effectiveLayer === 2 ? 'L2 N+1' : 'L3 N+2'}
-                    </text>
-                  </g>
-
+                  {/* Hover delete button on wire arc without ugly rectangular L1/L2 badge */}
                   {isHovered && (
-                    <g transform={`translate(${midX}, ${midY - 6})`} style={{ pointerEvents: 'none' }}>
-                      <circle r="3" fill="#ef4444" />
-                      <text textAnchor="middle" dy="1" fill="white" fontSize="2.8" fontWeight="bold">×</text>
+                    <g
+                      transform={`translate(${midX}, ${midY})`}
+                      style={{ pointerEvents: 'auto', cursor: 'pointer' }}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onRemoveWire(wire.id);
+                      }}
+                    >
+                      <circle r="4.5" fill="#ef4444" stroke="#ffffff" strokeWidth="0.8" filter="url(#wire-shadow)" />
+                      <text textAnchor="middle" dy="1.6" fill="white" fontSize="4.5" fontWeight="900" fontFamily="sans-serif">×</text>
                     </g>
                   )}
                 </g>
@@ -381,29 +316,14 @@ export default function PhysicalBoard({
                     height: `${resistor.height}%`
                   }}
                 >
-                  <div 
-                    className="w-full h-full rounded-xl flex flex-col items-center justify-center shadow-lg p-1 transition transform hover:scale-105"
-                    style={{
-                      backgroundColor: '#0d1322',
-                      border: '2px solid #38bdf8',
-                      boxShadow: '0 4px 14px rgba(56, 189, 248, 0.25)'
-                    }}
+                  <div
+                    className="w-full h-full flex flex-col items-center justify-center pointer-events-none select-none"
+                    style={{ background: 'none', border: 'none', boxShadow: 'none' }}
                   >
-                    <span style={{ fontSize: '0.85rem', fontWeight: 900, color: '#f8fafc', letterSpacing: '0.05em' }}>
+                    <span style={{ fontSize: '0.9rem', fontWeight: 900, color: '#292929ff', letterSpacing: '0.05em', lineHeight: '1.2' }}>
                       {resistor.id}
                     </span>
-                    <span style={{ 
-                      fontSize: '0.75rem', 
-                      fontWeight: 900, 
-                      color: '#38bdf8', 
-                      backgroundColor: 'rgba(56, 189, 248, 0.2)', 
-                      padding: '2px 6px', 
-                      borderRadius: '6px', 
-                      marginTop: '2px',
-                      border: '1px solid rgba(56, 189, 248, 0.45)',
-                      fontFamily: 'monospace',
-                      lineHeight: '1'
-                    }}>
+                    <span style={{ fontSize: '0.8rem', fontWeight: 900, color: '#04658fff', fontFamily: 'monospace', lineHeight: '1.2' }}>
                       {resistor.value >= 1000 ? `${(resistor.value / 1000).toFixed(1)} kΩ` : `${resistor.value} Ω`}
                     </span>
                   </div>
@@ -438,8 +358,8 @@ export default function PhysicalBoard({
                     </div>
 
                     {stackCount > 0 && (
-                      <div 
-                        className={`stack-badge ${stackCount >= 2 ? 'hover:scale-125 transition cursor-pointer bg-amber-500 text-slate-950 font-black' : ''}`} 
+                      <div
+                        className={`stack-badge ${stackCount >= 2 ? 'hover:scale-125 transition cursor-pointer bg-amber-500 text-slate-950 font-black' : ''}`}
                         style={{ zIndex: 50 }}
                         onClick={(e) => {
                           if (stackCount >= 2) {
@@ -452,11 +372,15 @@ export default function PhysicalBoard({
                       </div>
                     )}
 
-                    <div className="terminal-label" style={{ 
+                    <div className="terminal-label" style={{
                       color: isPos ? '#fca5a5' : '#93c5fd',
-                      border: isPos ? '1px solid rgba(239, 68, 68, 0.55)' : '1px solid rgba(59, 130, 246, 0.55)',
-                      background: isPos ? 'rgba(127, 29, 29, 0.85)' : 'rgba(30, 58, 138, 0.85)',
-                      fontWeight: 800
+                      background: isPos ? 'rgba(127, 29, 29, 0.92)' : 'rgba(30, 58, 138, 0.92)',
+                      padding: '2px 7px',
+                      borderRadius: '6px',
+                      boxShadow: '0 4px 10px rgba(0,0,0,0.5)',
+                      border: '1px solid rgba(255,255,255,0.14)',
+                      fontWeight: 800,
+                      letterSpacing: '0.03em'
                     }}>
                       {term.label}
                     </div>
@@ -464,12 +388,6 @@ export default function PhysicalBoard({
                 </div>
               );
             })}
-          </div>
-
-          {/* Instructions Overlay Pill */}
-          <div className="instructions-pill">
-            <div className="pulse-dot" style={{ width: '8px', height: '8px', background: '#38bdf8', boxShadow: '0 0 8px #38bdf8' }} />
-            <span>Haz clic en un borne y luego en otro para conectar. Toca el botón [L1 N] / [L2 N+1] en cualquier cable para ordenar por capas.</span>
           </div>
         </div>
       </div>
@@ -485,7 +403,7 @@ export default function PhysicalBoard({
                   Gestión de Conexiones del Borne: <span className="text-sky-400 font-mono">{inspectedTerminal.label}</span>
                 </h3>
               </div>
-              <button 
+              <button
                 onClick={() => setInspectTerminalId(null)}
                 className="text-slate-400 hover:text-white p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 transition"
               >
@@ -513,7 +431,7 @@ export default function PhysicalBoard({
                           Cable #{idx + 1} ➔ Hacia: <strong className="text-sky-300">{isOpposite?.label || 'Borne externo'}</strong>
                         </span>
                         <span className="text-[10px] text-slate-400">
-                          Nivel actual: {effLayer === 1 ? 'Nivel 1 Base' : effLayer === 2 ? 'Nivel 2 Superior (N+1)' : 'Nivel 3 Aéreo (N+2)'}
+                          Capa actual: Capa #{effLayer} ({effLayer === 1 ? 'Conexión Base Directa' : `Apilada en Paralelo ×${effLayer}`})
                         </span>
                       </div>
                     </div>
@@ -522,9 +440,9 @@ export default function PhysicalBoard({
                       <button
                         onClick={() => toggleWireLayerLocal(wire.id, effLayer)}
                         className="px-2 py-1 bg-slate-700 hover:bg-slate-600 text-slate-200 rounded-lg text-[11px] font-bold"
-                        title="Cambiar nivel de altura Z"
+                        title="Cambiar altura Z del arco en paralelo"
                       >
-                        Nivel {effLayer} ➔
+                        Capa {effLayer} ➔
                       </button>
                       <button
                         onClick={() => {
