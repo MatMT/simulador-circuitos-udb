@@ -123,7 +123,7 @@ export default function PhysicalBoard({
             <Plug size={16} />
           </div>
           <div>
-            <span className="text-[10px] font-mono uppercase tracking-wider text-slate-400 block font-bold">Cable Jack Banana</span>
+            <span className="text-[10px] font-mono uppercase tracking-wider text-slate-400 block font-bold">CABLE JACK</span>
             <span className="text-slate-100 font-sans">Selecciona Color:</span>
           </div>
 
@@ -145,8 +145,8 @@ export default function PhysicalBoard({
                 key={c.color}
                 onClick={() => onSelectColor(c.color)}
                 className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl font-mono text-xs font-extrabold transition-all duration-200 cursor-pointer ${isSelected
-                    ? 'ring-2 ring-sky-400 scale-105 shadow-lg shadow-sky-500/25'
-                    : 'opacity-80 hover:opacity-100 bg-slate-950/80'
+                  ? 'ring-2 ring-sky-400 scale-105 shadow-lg shadow-sky-500/25'
+                  : 'opacity-80 hover:opacity-100 bg-slate-950/80'
                   }`}
                 style={{
                   backgroundColor: isSelected ? c.color : undefined,

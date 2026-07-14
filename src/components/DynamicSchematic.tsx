@@ -52,11 +52,11 @@ export default function DynamicSchematic({
         {/* Compact Floating Voltage Controller */}
         <div className="flex items-center gap-3 bg-slate-950 px-3.5 py-1.5 rounded-xl border border-slate-800 shadow-md">
           <Sliders className="text-sky-400" size={15} />
-          <span className="font-mono text-xs text-slate-400 font-bold">Suministro (V_in):</span>
+          <span className="font-mono text-xs text-slate-400 font-bold">Suministro (V):</span>
           <input
             type="range"
             min="1"
-            max="24"
+            max="30"
             step="1"
             value={vin}
             onChange={(e) => setVin(Number(e.target.value))}
@@ -73,50 +73,46 @@ export default function DynamicSchematic({
       <div className="flex flex-wrap gap-1.5 bg-slate-950 p-1.5 rounded-xl border border-slate-800">
         <button
           onClick={() => setActiveTab('live_mirror')}
-          className={`flex-1 flex items-center justify-center gap-2 py-2 px-3 rounded-lg text-xs font-mono font-bold transition cursor-pointer ${
-            activeTab === 'live_mirror'
-              ? 'bg-sky-600 text-white shadow-md shadow-sky-500/30'
-              : 'text-slate-400 hover:text-white hover:bg-slate-900'
-          }`}
+          className={`flex-1 flex items-center justify-center gap-2 py-2 px-3 rounded-lg text-xs font-mono font-bold transition cursor-pointer ${activeTab === 'live_mirror'
+            ? 'bg-sky-600 text-white shadow-md shadow-sky-500/30'
+            : 'text-slate-400 hover:text-white hover:bg-slate-900'
+            }`}
         >
           <Activity size={14} />
-          <span>⚡ Diagrama Orgánico</span>
+          <span>⚡ Diagrama</span>
         </button>
 
         <button
           onClick={() => setActiveTab('topology')}
-          className={`flex-1 flex items-center justify-center gap-2 py-2 px-3 rounded-lg text-xs font-mono font-bold transition cursor-pointer ${
-            activeTab === 'topology'
-              ? 'bg-emerald-600 text-white shadow-md shadow-emerald-500/30'
-              : 'text-slate-400 hover:text-white hover:bg-slate-900'
-          }`}
+          className={`flex-1 flex items-center justify-center gap-2 py-2 px-3 rounded-lg text-xs font-mono font-bold transition cursor-pointer ${activeTab === 'topology'
+            ? 'bg-emerald-600 text-white shadow-md shadow-emerald-500/30'
+            : 'text-slate-400 hover:text-white hover:bg-slate-900'
+            }`}
         >
           <Network size={14} />
-          <span>🔗 Topología (R_eq)</span>
+          <span>🔗 Topología</span>
         </button>
 
         <button
           onClick={() => setActiveTab('kirchhoff')}
-          className={`flex-1 flex items-center justify-center gap-2 py-2 px-3 rounded-lg text-xs font-mono font-bold transition cursor-pointer ${
-            activeTab === 'kirchhoff'
-              ? 'bg-purple-600 text-white shadow-md shadow-purple-500/30'
-              : 'text-slate-400 hover:text-white hover:bg-slate-900'
-          }`}
+          className={`flex-1 flex items-center justify-center gap-2 py-2 px-3 rounded-lg text-xs font-mono font-bold transition cursor-pointer ${activeTab === 'kirchhoff'
+            ? 'bg-purple-600 text-white shadow-md shadow-purple-500/30'
+            : 'text-slate-400 hover:text-white hover:bg-slate-900'
+            }`}
         >
           <ShieldCheck size={14} />
-          <span>📐 Leyes de Kirchhoff</span>
+          <span>📐 Kirchhoff</span>
         </button>
 
         <button
           onClick={() => setActiveTab('measurements')}
-          className={`flex-1 flex items-center justify-center gap-2 py-2 px-3 rounded-lg text-xs font-mono font-bold transition cursor-pointer ${
-            activeTab === 'measurements'
-              ? 'bg-sky-600 text-white shadow-md shadow-sky-500/30'
-              : 'text-slate-400 hover:text-white hover:bg-slate-900'
-          }`}
+          className={`flex-1 flex items-center justify-center gap-2 py-2 px-3 rounded-lg text-xs font-mono font-bold transition cursor-pointer ${activeTab === 'measurements'
+            ? 'bg-sky-600 text-white shadow-md shadow-sky-500/30'
+            : 'text-slate-400 hover:text-white hover:bg-slate-900'
+            }`}
         >
           <Sliders size={14} />
-          <span>📊 Mediciones (V, I, P)</span>
+          <span>📊 Mediciones</span>
         </button>
       </div>
 
@@ -144,21 +140,19 @@ export default function DynamicSchematic({
                   <div className="flex items-center bg-slate-900 border border-slate-800 rounded-lg p-0.5 shadow-inner">
                     <button
                       onClick={() => setDiagramEngine('reactflow')}
-                      className={`px-3 py-1 rounded-md font-mono text-[11px] font-extrabold transition cursor-pointer flex items-center gap-1.5 ${
-                        diagramEngine === 'reactflow'
-                          ? 'bg-sky-600 text-white shadow-md shadow-sky-500/30'
-                          : 'text-slate-400 hover:text-white hover:bg-slate-800/50'
-                      }`}
+                      className={`px-3 py-1 rounded-md font-mono text-[11px] font-extrabold transition cursor-pointer flex items-center gap-1.5 ${diagramEngine === 'reactflow'
+                        ? 'bg-sky-600 text-white shadow-md shadow-sky-500/30'
+                        : 'text-slate-400 hover:text-white hover:bg-slate-800/50'
+                        }`}
                     >
                       <span>⚡ React Flow Orgánico (@xyflow)</span>
                     </button>
                     <button
                       onClick={() => setDiagramEngine('blueprint')}
-                      className={`px-3 py-1 rounded-md font-mono text-[11px] font-extrabold transition cursor-pointer flex items-center gap-1.5 ${
-                        diagramEngine === 'blueprint'
-                          ? 'bg-sky-600 text-white shadow-md shadow-sky-500/30'
-                          : 'text-slate-400 hover:text-white hover:bg-slate-800/50'
-                      }`}
+                      className={`px-3 py-1 rounded-md font-mono text-[11px] font-extrabold transition cursor-pointer flex items-center gap-1.5 ${diagramEngine === 'blueprint'
+                        ? 'bg-sky-600 text-white shadow-md shadow-sky-500/30'
+                        : 'text-slate-400 hover:text-white hover:bg-slate-800/50'
+                        }`}
                     >
                       <span>📐 Blueprint 2D</span>
                     </button>
