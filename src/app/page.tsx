@@ -3,16 +3,18 @@
 import React, { useState } from 'react';
 import PhysicalBoard from '../components/PhysicalBoard';
 import DynamicSchematic from '../components/DynamicSchematic';
+import CircuitTestBenchModal from '../components/CircuitTestBenchModal';
 import { Wire, WireColor } from '../types/circuit';
 import { solveCircuit } from '../utils/circuitEngine';
-import { Zap, RotateCcw } from 'lucide-react';
+import { Zap, RotateCcw, BookOpen } from 'lucide-react';
 
 export default function Home() {
-  // 0 ejemplos / 0 prearmado. Empieza 100% limpio como solicitó el usuario.
+  // 0 ejemplos / 0 prearmado al inicio. Empieza 100% limpio.
   const [wires, setWires] = useState<Wire[]>([]);
   const [selectedColor, setSelectedColor] = useState<WireColor>('#ef4444');
   const [activeTerminalId, setActiveTerminalId] = useState<string | null>(null);
   const [vin, setVin] = useState<number>(12);
+  const [isPresetModalOpen, setIsPresetModalOpen] = useState<boolean>(false);
 
   const analysis = solveCircuit(wires, vin);
 
@@ -50,6 +52,12 @@ export default function Home() {
     setActiveTerminalId(null);
   };
 
+  const handleLoadPreset = (presetWires: Wire[], presetVin?: number) => {
+    setWires(presetWires);
+    setActiveTerminalId(null);
+    if (presetVin) setVin(presetVin);
+  };
+
   return (
     <div className="app-container">
       {/* Top Header */}
@@ -61,24 +69,38 @@ export default function Home() {
           <div>
             <div className="header-title">
               <span>UNIVERSIDAD DON BOSCO</span>
-              <span className="header-badge">Simulador Púramente Dinámico </span>
+              <span className="header-badge">Simulador Dinámico de Laboratorio</span>
             </div>
             <div className="header-subtitle">
-              Módulo de 9 Resistencias —
+              Módulo de 9 Resistencias — Leyes de Kirchhoff & Ohm
             </div>
           </div>
         </div>
 
-        <div className="header-actions">
+        <div className="header-actions flex items-center gap-2.5 flex-wrap">
           <div className="status-pill">
-            <span style={{ color: '#94a3b8' }}>Estado del Circuito:</span>
+            <span style={{ color: '#94a3b8' }}>Estado:</span>
             <span style={{ fontWeight: 700, color: analysis.isComplete ? '#10b981' : '#60a5fa' }}>
-              {analysis.isComplete ? '● CERRADO Y MEDIDO EN VIVO' : '● CONECTANDO EN TABLERO ACRÍLICO'}
+              {analysis.isComplete ? '● LAZO CERRADO & MEDIDO' : '● EN TABLERO ACRÍLICO'}
             </span>
           </div>
 
-          <button onClick={handleClearWires} className="btn btn-secondary" title="Limpiar todos los cables del tablero">
-            <RotateCcw size={16} /> Limpiar Tablero
+          <button
+            onClick={() => setIsPresetModalOpen(true)}
+            className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold bg-gradient-to-r from-sky-600 to-emerald-600 hover:from-sky-500 hover:to-emerald-500 text-white shadow-lg shadow-sky-500/20 transition transform hover:scale-105 cursor-pointer border border-sky-400/30"
+            title="Cargar circuitos completos y mixtos canónicos de prueba"
+          >
+            <BookOpen size={16} />
+            <span>Banco de Pruebas (Presets)</span>
+          </button>
+
+          <button
+            onClick={handleClearWires}
+            className="btn btn-secondary flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 transition shadow cursor-pointer"
+            title="Limpiar todos los cables del tablero"
+          >
+            <RotateCcw size={16} />
+            <span>Limpiar Tablero</span>
           </button>
         </div>
       </header>
@@ -108,16 +130,23 @@ export default function Home() {
         </div>
       </main>
 
+      {/* Modal de Banco de Pruebas */}
+      <CircuitTestBenchModal
+        isOpen={isPresetModalOpen}
+        onClose={() => setIsPresetModalOpen(false)}
+        onLoadPreset={handleLoadPreset}
+      />
+
       {/* Footer */}
       <footer className="app-footer">
         <div className="footer-stats">
           <span>Total Cables en Tablero: <strong style={{ color: '#f8fafc' }}>{wires.length}</strong></span>
           <span>Nodos Activos: <strong style={{ color: '#f8fafc' }}>{analysis.nodes.length}</strong></span>
-          <span>Resistencia Equiv. (R<sub>eq</sub>): <strong style={{ color: '#10b981' }}>{analysis.req !== null ? `${analysis.req} Ω` : 'Abierto (∞)'}</strong></span>
-          <span>Corriente Total (I<sub>T</sub>): <strong style={{ color: '#22d3ee' }}>{analysis.totalCurrent} mA</strong></span>
+          <span>Resistencia Equiv. (R_eq): <strong style={{ color: '#10b981' }}>{analysis.req !== null ? `${analysis.req} Ω` : 'Abierto (∞)'}</strong></span>
+          <span>Corriente Total (I_T): <strong style={{ color: '#22d3ee' }}>{analysis.totalCurrent} mA</strong></span>
         </div>
         <div>
-          Simulador Exacto UDB — MNA Matrix Solver
+          Simulador Exacto UDB — MNA & Reducción Serie-Paralelo
         </div>
       </footer>
     </div>

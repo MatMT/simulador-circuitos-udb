@@ -40,13 +40,12 @@ export default function PhysicalBoard({
   const [hoveredWireId, setHoveredWireId] = useState<string | null>(null);
   const [mousePos, setMousePos] = useState<{ x: number; y: number } | null>(null);
   const [inspectTerminalId, setInspectTerminalId] = useState<string | null>(null);
-  const [activeLayerFilter] = useState<number>(0); // 0 = Todas las capas
-  const [localWires, setLocalWires] = useState<Record<string, number>>({}); // Override local de capas
+  const [activeLayerFilter] = useState<number>(0);
+  const [localWires, setLocalWires] = useState<Record<string, number>>({});
 
   const handleTerminalClick = (terminalId: string, e: React.MouseEvent) => {
     e.stopPropagation();
 
-    // Check if clicking on the stack badge or terminal when >1 wire exists
     const stackCount = wires.filter(w => w.fromTerminalId === terminalId || w.toTerminalId === terminalId).length;
 
     if (!activeTerminalId && stackCount >= 2 && (e.target as HTMLElement).closest('.stack-badge')) {
@@ -59,7 +58,6 @@ export default function PhysicalBoard({
     } else if (activeTerminalId === terminalId) {
       setActiveTerminalId(null);
     } else {
-      // El cálculo de capa dinámica en paralelo se asigna automáticamente al conectar
       onAddWire(activeTerminalId, terminalId, selectedColor);
       setActiveTerminalId(null);
     }
@@ -77,12 +75,11 @@ export default function PhysicalBoard({
     const dy = y2 - y1;
     const dist = Math.sqrt(dx * dx + dy * dy);
 
-    // Altura Z dinámicamente alterna y escalonada por capa de apilamiento
     let sag = Math.min(24, dist * 0.25) + Math.abs(stackOffset);
     if (layer === 2) {
-      sag = -Math.min(38, dist * 0.38) - Math.abs(stackOffset); // Arco superior (Capa 2 Paralela)
+      sag = -Math.min(38, dist * 0.38) - Math.abs(stackOffset);
     } else if (layer === 3) {
-      sag = Math.min(48, dist * 0.48) + Math.abs(stackOffset); // Arco inferior profundo (Capa 3)
+      sag = Math.min(48, dist * 0.48) + Math.abs(stackOffset);
     } else if (layer >= 4) {
       const isEven = layer % 2 === 0;
       const step = Math.floor(layer / 2) * 16;
@@ -119,57 +116,53 @@ export default function PhysicalBoard({
 
   return (
     <div className="board-card relative flex flex-col gap-3">
-      {/* Top Toolbar */}
-      <div className="board-toolbar flex items-center justify-between flex-wrap gap-2">
-        <div className="toolbar-title flex items-center gap-2">
-          <div className="pulse-dot" />
-          <span className="font-bold text-sm tracking-wide text-slate-100">Tablero Acrílico UDB — Simetría & Control por Capas (+ / -)</span>
-        </div>
-
-        <div className="toolbar-buttons flex gap-2">
-          <button
-            onClick={onClearWires}
-            className="btn btn-secondary flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 transition shadow"
-            title="Limpiar todas las conexiones y empezar desde cero"
-          >
-            <RotateCcw size={14} />
-            <span>Limpiar Todo</span>
-          </button>
-        </div>
-      </div>
-
-      {/* Cable Color Selector Banner (LARGE EXPLICIT BUTTONS SO YOU CAN PICK ANY COLOR IMMEDIATELY!) */}
-      <div className="mx-5 mt-4 bg-slate-900/95 border border-sky-500/40 px-4 py-3 rounded-xl flex items-center justify-between flex-wrap gap-3 shadow-lg">
-        <div className="flex items-center gap-2 text-xs font-bold text-slate-200">
-          <Plug size={18} className="text-sky-400" />
-          <span className="tracking-wide">Selecciona Color de Cable Jack Banana:</span>
+      {/* Sleek Unified Header Pill: Cable Color & Connection Status (Rediseño orgánico sin barras duplicadas) */}
+      <div className="mx-4 mt-3 bg-slate-900/90 border border-slate-800 px-4 py-2.5 rounded-2xl flex items-center justify-between flex-wrap gap-3 shadow-xl">
+        <div className="flex items-center gap-2.5 text-xs font-bold text-slate-200">
+          <div className="p-1.5 rounded-lg bg-sky-500/15 text-sky-400 border border-sky-500/30">
+            <Plug size={16} />
+          </div>
+          <div>
+            <span className="text-[10px] font-mono uppercase tracking-wider text-slate-400 block font-bold">Cable Jack Banana</span>
+            <span className="text-slate-100 font-sans">Selecciona Color:</span>
+          </div>
 
           {/* Active Terminal Pulse Notification */}
           {activeTerminalId && (
-            <span className="ml-2 px-3 py-1 rounded-lg bg-amber-500/25 text-amber-300 border border-amber-500/50 animate-pulse text-xs font-mono">
-              ⚡ Conectando desde: {getTerminalById(activeTerminalId)?.label} ➔ Clic en otro borne para unir
+            <span className="ml-2 px-3 py-1 rounded-xl bg-amber-500/20 text-amber-300 border border-amber-500/40 animate-pulse text-xs font-mono font-bold flex items-center gap-1.5">
+              <span>⚡ Origen: {getTerminalById(activeTerminalId)?.label}</span>
+              <span className="text-slate-400 font-sans font-normal">➔ Clic en destino</span>
             </span>
           )}
         </div>
 
         {/* Color Swatch Buttons */}
-        <div className="flex flex-wrap items-center gap-2">
+        <div className="flex flex-wrap items-center gap-1.5">
           {WIRE_COLORS.map(c => {
             const isSelected = selectedColor === c.color;
             return (
               <button
                 key={c.color}
                 onClick={() => onSelectColor(c.color)}
-                className={`flex items-center gap-2 px-3 py-1.5 rounded-full font-mono text-xs font-extrabold transition transform hover:scale-105 shadow-md cursor-pointer ${isSelected ? 'ring-2 ring-white scale-105 shadow-lg shadow-sky-500/40' : 'opacity-85 hover:opacity-100'}`}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl font-mono text-xs font-extrabold transition-all duration-200 cursor-pointer ${
+                  isSelected
+                    ? 'ring-2 ring-sky-400 scale-105 shadow-lg shadow-sky-500/25'
+                    : 'opacity-80 hover:opacity-100 bg-slate-950/80'
+                }`}
                 style={{
-                  backgroundColor: c.color,
-                  color: c.color === '#eab308' || c.color === '#10b981' ? '#0f172a' : '#ffffff',
-                  border: isSelected ? '2px solid #ffffff' : '2px solid rgba(255,255,255,0.25)'
+                  backgroundColor: isSelected ? c.color : undefined,
+                  color: isSelected
+                    ? (c.color === '#eab308' || c.color === '#10b981' ? '#0f172a' : '#ffffff')
+                    : c.color,
+                  border: isSelected ? '1px solid rgba(255,255,255,0.4)' : `1px solid ${c.color}60`
                 }}
-                title={`Haz clic para seleccionar cable ${c.label}`}
+                title={`Seleccionar cable ${c.label}`}
               >
-                <span className="w-3.5 h-3.5 rounded-full bg-white/40 inline-block shadow-inner border border-white/60" />
-                <span>{c.label} {isSelected && '●'}</span>
+                <span
+                  className="w-3 h-3 rounded-full shadow-inner inline-block border border-white/40"
+                  style={{ backgroundColor: c.color }}
+                />
+                <span>{c.label} {isSelected && '✓'}</span>
               </button>
             );
           })}
@@ -178,7 +171,7 @@ export default function PhysicalBoard({
 
       {/* Interactive Board Viewport */}
       <div
-        className="board-viewport mx-5 mb-5 mt-2 rounded-2xl overflow-hidden border-2 border-slate-800 shadow-2xl relative flex-1 min-h-[460px]"
+        className="board-viewport mx-4 mb-4 rounded-3xl overflow-hidden border border-slate-800/80 shadow-2xl relative flex-1 min-h-[480px]"
         onMouseMove={(e) => {
           if (activeTerminalId) {
             const plate = e.currentTarget.querySelector('.acrylic-plate');
@@ -193,8 +186,6 @@ export default function PhysicalBoard({
         }}
       >
         <div className="acrylic-plate">
-
-
           {/* SVG Wires Layer */}
           <svg className="board-svg-layer" style={{ zIndex: 20, pointerEvents: 'none' }} viewBox="0 0 100 100" preserveAspectRatio="none">
             <defs>
@@ -210,7 +201,6 @@ export default function PhysicalBoard({
 
               const effectiveLayer = localWires[wire.id] || wire.layer || 1;
               if (activeLayerFilter !== 0 && effectiveLayer !== activeLayerFilter) {
-                // Si el usuario está filtrando otra capa, lo atenúa (opacity 0.15) para máxima claridad
                 return (
                   <g key={wire.id} style={{ opacity: 0.15 }}>
                     <path
@@ -218,51 +208,57 @@ export default function PhysicalBoard({
                       fill="none"
                       stroke={wire.color}
                       strokeWidth="1"
-                      strokeDasharray="2,2"
+                      strokeLinecap="round"
                     />
                   </g>
                 );
               }
 
+              const pathData = getWirePath(t1, t2, wire.order, terminalStackCounts[wire.fromTerminalId] || 1, effectiveLayer);
               const isHovered = hoveredWireId === wire.id;
-              const { path: pathStr, midX, midY } = getWirePath(t1, t2, wire.order, terminalStackCounts[wire.fromTerminalId] || 1, effectiveLayer);
 
               return (
-                <g key={wire.id} style={{ pointerEvents: 'auto', cursor: 'pointer' }} onMouseEnter={() => setHoveredWireId(wire.id)} onMouseLeave={() => setHoveredWireId(null)}>
+                <g
+                  key={wire.id}
+                  style={{ pointerEvents: 'stroke', cursor: 'pointer', transition: 'all 0.2s' }}
+                  onMouseEnter={() => setHoveredWireId(wire.id)}
+                  onMouseLeave={() => setHoveredWireId(null)}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onRemoveWire(wire.id);
+                  }}
+                >
                   <path
-                    d={pathStr}
+                    d={pathData.path}
                     fill="none"
-                    stroke={isHovered ? '#ef4444' : wire.color}
-                    strokeWidth={isHovered ? '2.8' : effectiveLayer === 3 ? '2.2' : effectiveLayer === 2 ? '2.0' : '1.7'}
+                    stroke="#000000"
+                    strokeWidth={isHovered ? "2.6" : "2"}
+                    strokeOpacity="0.65"
+                    strokeLinecap="round"
+                  />
+                  <path
+                    d={pathData.path}
+                    fill="none"
+                    stroke={wire.color}
+                    strokeWidth={isHovered ? "1.9" : "1.5"}
                     strokeLinecap="round"
                     filter="url(#wire-shadow)"
-                    style={{ transition: 'stroke 0.2s, stroke-width 0.2s' }}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onRemoveWire(wire.id);
-                    }}
                   />
                   <path
-                    d={pathStr}
+                    d={pathData.path}
                     fill="none"
-                    stroke="rgba(255,255,255,0.4)"
-                    strokeWidth="0.4"
+                    stroke="#ffffff"
+                    strokeWidth={isHovered ? "0.6" : "0.35"}
+                    strokeOpacity="0.6"
+                    strokeDasharray="1.5 3"
                     strokeLinecap="round"
-                    style={{ pointerEvents: 'none' }}
                   />
-
-                  {/* Hover delete button on wire arc without ugly rectangular L1/L2 badge */}
                   {isHovered && (
-                    <g
-                      transform={`translate(${midX}, ${midY})`}
-                      style={{ pointerEvents: 'auto', cursor: 'pointer' }}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        onRemoveWire(wire.id);
-                      }}
-                    >
-                      <circle r="4.5" fill="#ef4444" stroke="#ffffff" strokeWidth="0.8" filter="url(#wire-shadow)" />
-                      <text textAnchor="middle" dy="1.6" fill="white" fontSize="4.5" fontWeight="900" fontFamily="sans-serif">×</text>
+                    <g transform={`translate(${pathData.midX}, ${pathData.midY})`}>
+                      <circle cx="0" cy="0" r="2.5" fill="#ef4444" stroke="#ffffff" strokeWidth="0.5" />
+                      <text x="0" y="-3.5" fontSize="3" fill="#ffffff" textAnchor="middle" fontWeight="bold">
+                        Desconectar
+                      </text>
                     </g>
                   )}
                 </g>
@@ -270,16 +266,16 @@ export default function PhysicalBoard({
             })}
 
             {activeTerminalId && mousePos && (() => {
-              const startTerm = getTerminalById(activeTerminalId);
-              if (!startTerm) return null;
+              const startT = getTerminalById(activeTerminalId);
+              if (!startT) return null;
               return (
                 <path
-                  d={`M ${startTerm.x} ${startTerm.y} L ${mousePos.x} ${mousePos.y}`}
+                  d={`M ${startT.x} ${startT.y} L ${mousePos.x} ${mousePos.y}`}
                   fill="none"
                   stroke={selectedColor}
-                  strokeWidth="1.8"
-                  className="flow-dash"
-                  style={{ pointerEvents: 'none' }}
+                  strokeWidth="1.2"
+                  strokeDasharray="2 2"
+                  strokeOpacity="0.85"
                 />
               );
             })()}
@@ -302,7 +298,7 @@ export default function PhysicalBoard({
             </span>
           </div>
 
-          {/* Resistors Physical Components Layer (LARGE PROMINENT VALUES AS REQUESTED!) */}
+          {/* Resistors Physical Components Layer */}
           <div className="resistor-layer" style={{ zIndex: 10 }}>
             {UDB_RESISTORS.map(resistor => {
               return (
@@ -350,7 +346,7 @@ export default function PhysicalBoard({
                     cursor: 'pointer'
                   }}
                   onClick={(e) => handleTerminalClick(term.id, e)}
-                  title={`Borne: ${term.label}. Clic para conectar. ${stackCount >= 2 ? 'Haz clic en la placa ×' + stackCount + ' para abrir modal y gestionar cables.' : ''}`}
+                  title={`Borne: ${term.label}. Clic para conectar. ${stackCount >= 2 ? 'Haz clic en el indicador ×' + stackCount + ' para abrir modal y gestionar cables.' : ''}`}
                 >
                   <div className={`terminal-socket ${isActive ? 'active' : ''} ${isPower ? (term.type === 'power_pos' ? 'power-pos' : 'power-neg') : ''}`}>
                     <div className="socket-hole">
@@ -392,10 +388,10 @@ export default function PhysicalBoard({
         </div>
       </div>
 
-      {/* MODAL DE DETALLE DEL BORNE / CABLES APILADOS */}
+      {/* Stacked Wires Inspection Modal */}
       {inspectTerminalId && inspectedTerminal && (
-        <div className="absolute inset-0 z-50 bg-slate-950/85 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-slate-900 border border-sky-500/50 rounded-2xl p-5 max-w-md w-full shadow-2xl flex flex-col gap-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 backdrop-blur-sm p-4 animate-fade-in" onClick={() => setInspectTerminalId(null)}>
+          <div className="bg-slate-900 border border-sky-500/40 rounded-3xl p-6 max-w-lg w-full flex flex-col gap-4 shadow-2xl" onClick={e => e.stopPropagation()}>
             <div className="flex items-center justify-between border-b border-slate-800 pb-3">
               <div className="flex items-center gap-2">
                 <Info className="text-sky-400" size={20} />
@@ -405,7 +401,7 @@ export default function PhysicalBoard({
               </div>
               <button
                 onClick={() => setInspectTerminalId(null)}
-                className="text-slate-400 hover:text-white p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 transition"
+                className="text-slate-400 hover:text-white p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 transition cursor-pointer"
               >
                 <X size={16} />
               </button>
@@ -439,7 +435,7 @@ export default function PhysicalBoard({
                     <div className="flex items-center gap-1.5">
                       <button
                         onClick={() => toggleWireLayerLocal(wire.id, effLayer)}
-                        className="px-2 py-1 bg-slate-700 hover:bg-slate-600 text-slate-200 rounded-lg text-[11px] font-bold"
+                        className="px-2 py-1 bg-slate-700 hover:bg-slate-600 text-slate-200 rounded-lg text-[11px] font-bold cursor-pointer"
                         title="Cambiar altura Z del arco en paralelo"
                       >
                         Capa {effLayer} ➔
@@ -451,7 +447,7 @@ export default function PhysicalBoard({
                             setInspectTerminalId(null);
                           }
                         }}
-                        className="px-2.5 py-1 bg-red-500/20 hover:bg-red-500 text-red-300 hover:text-white rounded-lg transition font-sans font-bold flex items-center gap-1 border border-red-500/40"
+                        className="px-2.5 py-1 bg-red-500/20 hover:bg-red-500 text-red-300 hover:text-white rounded-lg transition font-sans font-bold flex items-center gap-1 border border-red-500/40 cursor-pointer"
                       >
                         <Trash2 size={13} />
                       </button>
@@ -464,7 +460,7 @@ export default function PhysicalBoard({
             <div className="flex justify-end pt-2 border-t border-slate-800">
               <button
                 onClick={() => setInspectTerminalId(null)}
-                className="px-4 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg text-xs font-semibold transition"
+                className="px-4 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg text-xs font-semibold transition cursor-pointer"
               >
                 Cerrar Modal
               </button>
