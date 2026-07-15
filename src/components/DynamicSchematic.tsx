@@ -23,7 +23,7 @@ export default function DynamicSchematic({
   vin,
   setVin
 }: DynamicSchematicProps) {
-  const [activeTab, setActiveTab] = useState<'live_mirror' | 'topology' | 'kirchhoff' | 'measurements'>('live_mirror');
+  const [activeTab, setActiveTab] = useState<'live_mirror' | 'topology' | 'kirchhoff' | 'measurements'>('measurements');
   const [diagramEngine, setDiagramEngine] = useState<'reactflow' | 'blueprint'>('reactflow');
   const [hoveredElement, setHoveredElement] = useState<{ type: 'resistor' | 'wire'; id: string } | null>(null);
 
@@ -72,14 +72,14 @@ export default function DynamicSchematic({
       {/* Tab Selector Nav */}
       <div className="flex flex-wrap gap-1.5 bg-slate-950 p-1.5 rounded-xl border border-slate-800">
         <button
-          onClick={() => setActiveTab('live_mirror')}
-          className={`flex-1 flex items-center justify-center gap-2 py-2 px-3 rounded-lg text-xs font-mono font-bold transition cursor-pointer ${activeTab === 'live_mirror'
+          onClick={() => setActiveTab('measurements')}
+          className={`flex-1 flex items-center justify-center gap-2 py-2 px-3 rounded-lg text-xs font-mono font-bold transition cursor-pointer ${activeTab === 'measurements'
             ? 'bg-sky-600 text-white shadow-md shadow-sky-500/30'
             : 'text-slate-400 hover:text-white hover:bg-slate-900'
             }`}
         >
-          <Activity size={14} />
-          <span>⚡ Diagrama</span>
+          <Sliders size={14} />
+          <span>📊 Mediciones</span>
         </button>
 
         <button
@@ -104,16 +104,19 @@ export default function DynamicSchematic({
           <span>📐 Kirchhoff</span>
         </button>
 
+        {/* Oculto de momento por requerimiento del usuario: Tab de Diagrama ('live_mirror') */}
+        {/*
         <button
-          onClick={() => setActiveTab('measurements')}
-          className={`flex-1 flex items-center justify-center gap-2 py-2 px-3 rounded-lg text-xs font-mono font-bold transition cursor-pointer ${activeTab === 'measurements'
+          onClick={() => setActiveTab('live_mirror')}
+          className={`flex-1 flex items-center justify-center gap-2 py-2 px-3 rounded-lg text-xs font-mono font-bold transition cursor-pointer ${activeTab === 'live_mirror'
             ? 'bg-sky-600 text-white shadow-md shadow-sky-500/30'
             : 'text-slate-400 hover:text-white hover:bg-slate-900'
             }`}
         >
-          <Sliders size={14} />
-          <span>📊 Mediciones</span>
+          <Activity size={14} />
+          <span>⚡ Diagrama</span>
         </button>
+        */}
       </div>
 
       <div className="schematic-content">

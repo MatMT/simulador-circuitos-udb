@@ -64,64 +64,61 @@
   /* ==========================================
      APP MAIN LAYOUT
   ========================================== */
+  /* ==========================================
+     APP MAIN LAYOUT & WORKSPACE GUARANTEED SPACE
+  ========================================== */
   .app-container {
     display: flex;
     flex-direction: column;
-    height: 100vh;
-    max-height: 100vh;
-    overflow: hidden;
-  }
-
-  @media (max-width: 1100px) {
-    .app-container {
-      height: auto;
-      max-height: none;
-      overflow-y: auto;
-    }
+    min-height: 100vh;
+    overflow-y: auto;
+    overflow-x: hidden;
+    background: #020617;
   }
 
   .app-header {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 14px 28px;
-    background: rgba(15, 23, 42, 0.95);
+    padding: 18px 36px;
+    min-height: 88px;
+    background: rgba(15, 23, 42, 0.98);
     border-bottom: 1px solid var(--border-color);
-    backdrop-filter: blur(16px);
+    backdrop-filter: blur(20px);
     flex-shrink: 0;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.45);
     z-index: 50;
-    gap: 16px;
+    gap: 20px;
     flex-wrap: wrap;
   }
 
   .header-brand {
     display: flex;
     align-items: center;
-    gap: 16px;
+    gap: 18px;
   }
 
   .header-logo {
-    width: 46px;
-    height: 46px;
-    border-radius: 12px;
+    width: 50px;
+    height: 50px;
+    border-radius: 14px;
     background: linear-gradient(135deg, var(--accent-blue), var(--accent-cyan));
     display: flex;
     align-items: center;
     justify-content: center;
-    box-shadow: 0 0 20px rgba(59, 130, 246, 0.4);
+    box-shadow: 0 0 24px rgba(59, 130, 246, 0.45);
     color: white;
     flex-shrink: 0;
   }
 
   .header-title {
-    font-size: 1.18rem;
-    font-weight: 800;
+    font-size: 1.25rem;
+    font-weight: 900;
     display: flex;
     align-items: center;
-    gap: 10px;
+    gap: 12px;
     color: white;
-    letter-spacing: -0.01em;
+    letter-spacing: -0.02em;
     flex-wrap: wrap;
   }
 
@@ -137,9 +134,10 @@
   }
 
   .header-subtitle {
-    font-size: 0.82rem;
+    font-size: 0.84rem;
     color: var(--text-secondary);
-    margin-top: 3px;
+    margin-top: 4px;
+    letter-spacing: -0.01em;
   }
 
   .header-actions {
@@ -164,19 +162,18 @@
     display: grid;
     grid-template-columns: 1.4fr 1fr;
     gap: 24px;
-    padding: 24px;
-    flex: 1;
-    overflow: hidden;
-    height: calc(100vh - 124px);
+    padding: 24px 36px;
+    flex: 1 0 auto;
+    min-height: max(720px, calc(100vh - 190px));
   }
 
   @media (max-width: 1100px) {
     .main-grid {
       grid-template-columns: 1fr;
       height: auto;
-      overflow: visible;
-      padding: 16px;
-      gap: 16px;
+      min-height: 700px;
+      padding: 20px;
+      gap: 20px;
     }
   }
 
@@ -184,8 +181,7 @@
     display: flex;
     flex-direction: column;
     height: 100%;
-    overflow: hidden;
-    min-height: 600px;
+    min-height: 640px;
   }
 
   .app-footer {

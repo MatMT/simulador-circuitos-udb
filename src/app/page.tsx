@@ -4,6 +4,8 @@ import React, { useState } from 'react';
 import PhysicalBoard from '../components/PhysicalBoard';
 import DynamicSchematic from '../components/DynamicSchematic';
 import CircuitTestBenchModal from '../components/CircuitTestBenchModal';
+import OlaLabsCarousel from '../components/OlaLabsCarousel';
+import OlaLabsFooter from '../components/OlaLabsFooter';
 import { Wire, WireColor } from '../types/circuit';
 import { solveCircuit } from '../utils/circuitEngine';
 import { Zap, RotateCcw, BookOpen } from 'lucide-react';
@@ -64,24 +66,24 @@ export default function Home() {
       <header className="app-header">
         <div className="header-brand">
           <div className="header-logo">
-            <Zap size={24} />
+            <Zap size={26} />
           </div>
           <div>
             <div className="header-title">
               <span>UNIVERSIDAD DON BOSCO</span>
-              <span className="header-badge">Simulador Dinámico de Laboratorio</span>
+              <span className="header-badge">BETA</span>
             </div>
-            <div className="header-subtitle">
-              Módulo de 9 Resistencias — Leyes de Kirchhoff & Ohm
+            <div className="header-subtitle font-sans tracking-tight">
+              Laboratorio de Circuitos · 9 Resistencias
             </div>
           </div>
         </div>
 
-        <div className="header-actions flex items-center gap-2.5 flex-wrap">
+        <div className="header-actions flex items-center gap-2.5 flex-wrap font-sans">
           <div className="status-pill">
             <span style={{ color: '#94a3b8' }}>Estado:</span>
             <span style={{ fontWeight: 700, color: analysis.isComplete ? '#10b981' : '#60a5fa' }}>
-              {analysis.isComplete ? '● LAZO CERRADO & MEDIDO' : '● EN TABLERO ACRÍLICO'}
+              {analysis.isComplete ? '● Lazo Medido' : '● Tablero Acrílico'}
             </span>
           </div>
 
@@ -91,7 +93,7 @@ export default function Home() {
             title="Cargar circuitos completos y mixtos canónicos de prueba"
           >
             <BookOpen size={16} />
-            <span>Banco de Pruebas (Presets)</span>
+            <span>Banco de Pruebas</span>
           </button>
 
           <button
@@ -100,10 +102,13 @@ export default function Home() {
             title="Limpiar todos los cables del tablero"
           >
             <RotateCcw size={16} />
-            <span>Limpiar Tablero</span>
+            <span>Limpiar</span>
           </button>
         </div>
       </header>
+
+      {/* Carrusel Interno de Patrocinio - OlaLabs */}
+      <OlaLabsCarousel />
 
       {/* Main Grid Workspace */}
       <main className="main-grid">
@@ -137,18 +142,30 @@ export default function Home() {
         onLoadPreset={handleLoadPreset}
       />
 
-      {/* Footer */}
-      <footer className="app-footer">
-        <div className="footer-stats">
-          <span>Total Cables en Tablero: <strong style={{ color: '#f8fafc' }}>{wires.length}</strong></span>
-          <span>Nodos Activos: <strong style={{ color: '#f8fafc' }}>{analysis.nodes.length}</strong></span>
-          <span>Resistencia Equiv. (R_eq): <strong style={{ color: '#10b981' }}>{analysis.req !== null ? `${analysis.req} Ω` : 'Abierto (∞)'}</strong></span>
-          <span>Corriente Total (I_T): <strong style={{ color: '#22d3ee' }}>{analysis.totalCurrent} mA</strong></span>
+      {/* Live Circuit Telemetry Status Ribbon */}
+      <div className="bg-slate-950 border-t border-slate-900 px-6 py-3 flex flex-wrap items-center justify-between gap-4 text-xs font-mono text-slate-400 flex-shrink-0">
+        <div className="flex flex-wrap items-center gap-6">
+          <span className="flex items-center gap-1.5">
+            <span className="w-2 h-2 rounded-full bg-emerald-400" />
+            <span>Cables: <strong className="text-white font-sans font-bold text-sm">{wires.length}</strong></span>
+          </span>
+          <span className="flex items-center gap-1.5">
+            <span>Nodos: <strong className="text-white font-sans font-bold text-sm">{analysis.nodes.length}</strong></span>
+          </span>
+          <span className="flex items-center gap-1.5">
+            <span>R_eq: <strong className="text-emerald-400 font-sans font-extrabold text-sm">{analysis.req !== null ? `${analysis.req} Ω` : '∞'}</strong></span>
+          </span>
+          <span className="flex items-center gap-1.5">
+            <span>I_T: <strong className="text-cyan-400 font-sans font-extrabold text-sm">{analysis.totalCurrent} mA</strong></span>
+          </span>
         </div>
-        <div>
-          Simulador Exacto UDB — MNA & Reducción Serie-Paralelo
+        <div className="text-[11px] text-slate-500 hidden xl:block font-sans font-medium tracking-tight">
+          ⚡ Motor MNA en Tiempo Real
         </div>
-      </footer>
+      </div>
+
+      {/* Footer Principal Espacioso de Atribución, Beta y Feedback - OlaLabs */}
+      <OlaLabsFooter />
     </div>
   );
 }
