@@ -37,7 +37,7 @@ const SLIDES: CarouselSlide[] = [
     ),
     body: (
       <span className="text-[#515154] font-medium">
-        Puntas de alto rendimiento y fundas magnéticas diseñadas para tu flujo creativo universitario.
+        Puntas de alto rendimiento y fundas diseñadas para tu flujo creativo universitario.
       </span>
     ),
     ctaText: 'Explorar Apple →',
@@ -72,15 +72,15 @@ const SLIDES: CarouselSlide[] = [
     ctaText: 'Explorar Samsung →',
     ctaStyle: 'bg-[#0071e3] text-white hover:bg-[#2997ff] font-sans font-bold rounded-full px-5 py-2.5 shadow-lg shadow-[#0071e3]/40 transition-all transform hover:scale-105 border border-[#2997ff]/40',
     badgeStyle: 'bg-[#0071e3]/25 border-[#2997ff]/50 text-[#2997ff]',
-    auroraGlow: 'radial-gradient(circle at 85% 50%, rgba(37, 99, 235, 0.35) 0%, rgba(6, 182, 212, 0.22) 50%, transparent 80%)',
-    cardSurface: 'bg-[#000000] text-[#f5f5f7]',
-    borderColor: 'border-[#2997ff]/40 hover:border-[#2997ff]/70',
+    auroraGlow: 'radial-gradient(circle at 85% 50%, rgba(41, 151, 255, 0.25) 0%, rgba(6, 182, 212, 0.15) 50%, transparent 80%)',
+    cardSurface: 'bg-[#1c1c1e] text-[#f5f5f7]',
+    borderColor: 'border-[#3f3f46] hover:border-[#52525b]',
     isLight: false,
-    navContainerStyle: 'bg-[#09090b] border border-[#424245]/60',
-    navArrowStyle: 'text-[#86868b] hover:text-[#f5f5f7] hover:bg-white/10',
+    navContainerStyle: 'bg-[#27272a] border border-[#3f3f46]',
+    navArrowStyle: 'text-[#a1a1aa] hover:text-white hover:bg-white/10',
     activeDotColor: 'bg-[#2997ff] shadow-sm shadow-[#2997ff]/50',
-    inactiveDotColor: 'bg-[#424245] hover:bg-[#86868b]',
-    dividerStyle: 'border-[#424245]/60',
+    inactiveDotColor: 'bg-[#3f3f46] hover:bg-[#71717a]',
+    dividerStyle: 'border-[#3f3f46]/80',
     imageSrc: '/Samsung.jpeg',
     imageAlt: 'Repuestos para estilete Samsung S-Pen'
   },
@@ -203,7 +203,7 @@ export default function OlaLabsCarousel() {
                 ? 'border-[#d2d2d7] bg-[#f5f5f7] shadow-black/10'
                 : slide.id === 3
                   ? 'border-white/20 bg-slate-950/95 shadow-blue-500/25 p-1.5'
-                  : 'border-[#2997ff]/40 bg-[#0a0e1a] shadow-blue-500/15'
+                  : 'border-[#52525b] bg-[#27272a] shadow-black/30'
                 }`}>
                 <img
                   src={slide.imageSrc}
