@@ -33,18 +33,15 @@ export default function OlaLabsFooter() {
           <div className="flex flex-col items-center md:items-start text-center md:text-left gap-2.5">
             <div className="flex items-center gap-2">
               <div className="w-7 h-7 rounded-lg bg-gradient-to-tr from-sky-500 to-blue-600 flex items-center justify-center text-white font-extrabold text-sm shadow-md shadow-sky-500/20">
-                ~
+                O
               </div>
               <span className="text-white font-extrabold text-lg tracking-tight font-sans">
                 OlaLabs
               </span>
-              <span className="text-[10px] font-mono font-bold bg-sky-500/15 text-sky-400 px-2 py-0.5 rounded-full border border-sky-500/30">
-                PRO
-              </span>
             </div>
 
             <p className="text-xs text-slate-400 font-sans leading-relaxed max-w-sm">
-              Una plataforma académica y tecnológica desarrollada por <strong className="text-slate-200">OlaLabs</strong> para potenciar el aprendizaje experimental en la <strong className="text-slate-200">Universidad Don Bosco</strong>.
+              Una plataforma académica y tecnológica desarrollada por <strong className="text-slate-200">OlaLabs</strong>.
             </p>
 
             <div className="flex items-center gap-1.5 text-xs font-mono text-slate-300 mt-1">
@@ -111,7 +108,7 @@ export default function OlaLabsFooter() {
           </div>
 
           <div>
-            © {new Date().getFullYear()} <strong className="text-slate-400 font-semibold">OlaLabs</strong> · Mateo Elías. Todos los derechos reservados.
+            © {new Date().getFullYear()} Todos los derechos reservados.
           </div>
         </div>
       </div>
