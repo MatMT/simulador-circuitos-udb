@@ -160,7 +160,7 @@
 
   .main-grid {
     display: grid;
-    grid-template-columns: 1.4fr 1fr;
+    grid-template-columns: 1.7fr 1fr;
     gap: 24px;
     padding: 24px 36px;
     flex: 1 0 auto;
@@ -412,8 +412,8 @@
   .acrylic-plate {
     position: relative;
     width: 100%;
-    max-width: 860px;
-    aspect-ratio: 16 / 10;
+    max-width: 1200px;
+    aspect-ratio: 16 / 11.5;
     background: #ffffff;
     border-radius: 24px;
     box-shadow: 0 30px 60px rgba(0, 0, 0, 0.7), inset 0 2px 6px rgba(255, 255, 255, 1);
@@ -591,21 +591,26 @@
 
   .stack-badge {
     position: absolute;
-    top: -8px;
-    right: -8px;
-    padding: 2px 6px;
-    background: #2563eb;
+    top: -6px;
+    right: -6px;
+    padding: 2px 5px;
+    background: #3b82f6;
     color: white;
     font-family: var(--font-mono);
     font-weight: 800;
-    font-size: 0.6rem;
+    font-size: 0.55rem;
     border-radius: 999px;
-    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.5);
-    border: 1px solid white;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.4);
+    border: 1px solid rgba(255, 255, 255, 0.2);
     display: flex;
     align-items: center;
     gap: 2px;
-    animation: bounce 1.5s infinite;
+    animation: gentle-float 4s ease-in-out infinite;
+  }
+
+  @keyframes gentle-float {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-3px); }
   }
 
   .terminal-label {

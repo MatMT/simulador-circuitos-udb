@@ -52,6 +52,11 @@ export interface CircuitAnalysisResult {
   req: number | null; // Equivalent resistance across power terminals in Ohms
   totalCurrent: number; // Total current supplied by power source in mA
   measurements: Record<ResistorId, ResistorMeasurement>;
+  wattmeterPower?: number; // Power in Watts calculated from Wattmeter O, I, U
+  multimeterResult?: {
+    value: number;
+    error?: 'OL' | 'FUSE_BLOWN';
+  };
   isComplete: boolean;
   hasShortCircuit: boolean;
   paso4Status: {
