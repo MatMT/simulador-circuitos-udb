@@ -5,6 +5,7 @@ import PhysicalBoard from '../components/PhysicalBoard';
 import DynamicSchematic from '../components/DynamicSchematic';
 import CircuitTestBenchModal from '../components/CircuitTestBenchModal';
 import ShareCircuitModal from '../components/ShareCircuitModal';
+import SaveCircuitModal from '../components/SaveCircuitModal';
 import OlaLabsCarousel from '../components/OlaLabsCarousel';
 import OlaLabsFooter from '../components/OlaLabsFooter';
 import { Wire, WireColor } from '../types/circuit';
@@ -22,11 +23,13 @@ export default function Home() {
   const [vin, setVin] = useState<number>(12);
   const [isPresetModalOpen, setIsPresetModalOpen] = useState<boolean>(false);
   const [isShareModalOpen, setIsShareModalOpen] = useState<boolean>(false);
+  const [isSaveModalOpen, setIsSaveModalOpen] = useState<boolean>(false);
+  const [useStrictSigns, setUseStrictSigns] = useState<boolean>(true); // Siempre activado por defecto
   const [shareUrl, setShareUrl] = useState<string>('');
 
   const { circuits, saveCircuit, deleteCircuit, duplicateCircuit } = useCustomCircuits();
 
-  const analysis = solveCircuit(wires, vin);
+  const analysis = solveCircuit(wires, vin, useStrictSigns);
 
   useEffect(() => {
     // Verificar si hay un circuito compartido en la URL
@@ -94,11 +97,7 @@ export default function Home() {
   };
 
   const handleSaveCircuit = () => {
-    const name = window.prompt('Introduce un nombre para el circuito:', `Mi Circuito ${new Date().toLocaleDateString()}`);
-    if (name) {
-      saveCircuit(name, wires, vin);
-      alert('Circuito guardado en tu Banco de Circuitos local.');
-    }
+    setIsSaveModalOpen(true);
   };
 
   const handleShareCustom = (circuit: CustomCircuit) => {
@@ -194,6 +193,8 @@ export default function Home() {
             analysis={analysis}
             vin={vin}
             setVin={setVin}
+            useStrictSigns={useStrictSigns}
+            setUseStrictSigns={setUseStrictSigns}
           />
         </div>
       </main>
@@ -207,6 +208,14 @@ export default function Home() {
         onDeleteCustom={deleteCircuit}
         onDuplicateCustom={duplicateCircuit}
         onShareCustom={handleShareCustom}
+      />
+
+      <SaveCircuitModal
+        isOpen={isSaveModalOpen}
+        onClose={() => setIsSaveModalOpen(false)}
+        onSave={(name) => saveCircuit(name, wires, vin)}
+        wires={wires}
+        vin={vin}
       />
 
       <ShareCircuitModal

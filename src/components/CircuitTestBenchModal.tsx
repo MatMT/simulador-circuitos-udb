@@ -4,7 +4,9 @@ import React, { useState } from 'react';
 import { CIRCUIT_PRESETS, CircuitPreset } from '../utils/circuitPresets';
 import { Wire } from '../types/circuit';
 import { CustomCircuit } from '../types/customCircuit';
-import { BookOpen, Zap, X, ArrowRight, Layers, CheckCircle, ShieldCheck, Trash2, Copy, Share2, FolderOpen } from 'lucide-react';
+import { BookOpen, Zap, X, ArrowRight, Layers, CheckCircle, ShieldCheck, Trash2, Copy, Share2, FolderOpen, QrCode, Link as LinkIcon, Scan } from 'lucide-react';
+import { Scanner } from '@yudiel/react-qr-scanner';
+import LZString from 'lz-string';
 
 interface CircuitTestBenchModalProps {
   isOpen: boolean;
@@ -25,10 +27,15 @@ export default function CircuitTestBenchModal({
   onDuplicateCustom,
   onShareCustom
 }: CircuitTestBenchModalProps) {
-  const [activeTab, setActiveTab] = useState<'presets' | 'custom'>('presets');
+  const [activeTab, setActiveTab] = useState<'presets' | 'custom' | 'import'>('presets');
   const [selectedCategory, setSelectedCategory] = useState<'all' | 'serie' | 'paralelo' | 'mixto'>('all');
   const [selectedPreset, setSelectedPreset] = useState<CircuitPreset | null>(CIRCUIT_PRESETS[3]);
   const [selectedCustom, setSelectedCustom] = useState<CustomCircuit | null>(null);
+  
+  // Import state
+  const [importUrl, setImportUrl] = useState('');
+  const [isScanning, setIsScanning] = useState(false);
+  const [importError, setImportError] = useState('');
 
   if (!isOpen) return null;
 
@@ -66,6 +73,29 @@ export default function CircuitTestBenchModal({
     onClose();
   };
 
+  const handleProcessImport = (urlToProcess: string) => {
+    setImportError('');
+    try {
+      let dataStr = urlToProcess;
+      if (urlToProcess.includes('?share=')) {
+        dataStr = urlToProcess.split('?share=')[1].split('&')[0];
+      }
+      
+      const decoded = LZString.decompressFromEncodedURIComponent(dataStr);
+      if (!decoded) throw new Error('No se pudo decodificar el enlace');
+      
+      const parsed = JSON.parse(decoded);
+      if (parsed && Array.isArray(parsed.wires)) {
+        onLoadPreset(parsed.wires, parsed.vin || 12);
+        onClose();
+      } else {
+        throw new Error('Formato de circuito inválido');
+      }
+    } catch (e) {
+      setImportError('Enlace inválido o corrupto. Verifica que sea un enlace de OlaLabs correcto.');
+    }
+  };
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 backdrop-blur-md p-4 animate-fade-in">
       <div className="bg-slate-900 border border-sky-500/40 rounded-3xl w-full max-w-5xl max-h-[90vh] overflow-hidden flex flex-col shadow-2xl">
@@ -99,23 +129,35 @@ export default function CircuitTestBenchModal({
         <div className="px-6 pt-4 bg-slate-950/40 border-b border-slate-800/80 flex items-center gap-4">
           <button
             onClick={() => setActiveTab('presets')}
-            className={`pb-3 px-2 font-mono text-sm font-bold transition border-b-2 ${
-              activeTab === 'presets'
-                ? 'border-sky-500 text-sky-400'
-                : 'border-transparent text-slate-400 hover:text-slate-200'
+            className={`flex items-center gap-2 pb-3 px-2 border-b-2 font-bold text-sm transition ${
+              activeTab === 'presets' ? 'border-sky-500 text-sky-400' : 'border-transparent text-slate-400 hover:text-slate-200'
             }`}
           >
-            Presets de Laboratorio (UDB)
+            <Layers size={18} />
+            Presets Oficiales
           </button>
+          
           <button
             onClick={() => setActiveTab('custom')}
-            className={`pb-3 px-2 font-mono text-sm font-bold transition border-b-2 flex items-center gap-2 ${
-              activeTab === 'custom'
-                ? 'border-emerald-500 text-emerald-400'
-                : 'border-transparent text-slate-400 hover:text-slate-200'
+            className={`flex items-center gap-2 pb-3 px-2 border-b-2 font-bold text-sm transition ${
+              activeTab === 'custom' ? 'border-emerald-500 text-emerald-400' : 'border-transparent text-slate-400 hover:text-slate-200'
             }`}
           >
-            <FolderOpen size={16} /> Mis Circuitos
+            <FolderOpen size={18} />
+            Mis Circuitos
+          </button>
+          
+          <button
+            onClick={() => {
+              setActiveTab('import');
+              setIsScanning(false);
+            }}
+            className={`flex items-center gap-2 pb-3 px-2 border-b-2 font-bold text-sm transition ${
+              activeTab === 'import' ? 'border-purple-500 text-purple-400' : 'border-transparent text-slate-400 hover:text-slate-200'
+            }`}
+          >
+            <QrCode size={18} />
+            Importar
           </button>
         </div>
 
@@ -315,6 +357,81 @@ export default function CircuitTestBenchModal({
               ) : (
                 <div className="text-center py-12 text-slate-500">Selecciona un circuito de la lista.</div>
               )
+            )}
+
+            {activeTab === 'import' && (
+              <div className="flex flex-col gap-6 p-6 max-w-lg mx-auto w-full animate-fade-in">
+                <div className="text-center">
+                  <h3 className="text-2xl font-extrabold text-purple-400 mb-2 flex items-center justify-center gap-3">
+                    <QrCode size={28} /> Importar Circuito
+                  </h3>
+                  <p className="text-sm text-slate-400 font-mono">
+                    Pega un enlace de OlaLabs o escanea un código QR desde la cámara de tu dispositivo.
+                  </p>
+                </div>
+
+                {importError && (
+                  <div className="p-3 bg-red-500/20 border border-red-500/50 rounded-xl text-red-300 text-xs font-mono font-bold text-center">
+                    {importError}
+                  </div>
+                )}
+
+                <div className="flex flex-col gap-3">
+                  <label className="text-xs font-mono font-bold text-slate-400 uppercase flex items-center gap-2">
+                    <LinkIcon size={14} /> Enlace de OlaLabs
+                  </label>
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      value={importUrl}
+                      onChange={(e) => setImportUrl(e.target.value)}
+                      placeholder="https://..."
+                      className="flex-1 bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-slate-200 focus:outline-none focus:border-purple-500 transition font-mono text-xs"
+                    />
+                    <button
+                      onClick={() => handleProcessImport(importUrl)}
+                      disabled={!importUrl.trim()}
+                      className="px-4 py-3 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-bold transition shadow-lg shadow-purple-500/20 disabled:opacity-50 cursor-pointer"
+                    >
+                      Cargar
+                    </button>
+                  </div>
+                </div>
+
+                <div className="relative flex items-center justify-center py-2">
+                  <div className="border-t border-slate-800 absolute w-full"></div>
+                  <span className="bg-slate-900 px-3 text-xs font-mono text-slate-500 relative z-10">O</span>
+                </div>
+
+                {!isScanning ? (
+                  <button
+                    onClick={() => setIsScanning(true)}
+                    className="w-full py-4 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 flex flex-col items-center justify-center gap-2 text-slate-300 transition cursor-pointer"
+                  >
+                    <Scan size={32} className="text-sky-400" />
+                    <span className="font-bold">Iniciar Escáner QR</span>
+                  </button>
+                ) : (
+                  <div className="flex flex-col gap-3 bg-black rounded-2xl overflow-hidden border border-slate-800">
+                    <Scanner
+                      onScan={(result) => {
+                        if (result && result.length > 0 && result[0].rawValue) {
+                          setIsScanning(false);
+                          handleProcessImport(result[0].rawValue);
+                        }
+                      }}
+                      onError={(err) => console.error(err)}
+                      styles={{ container: { width: '100%', paddingBottom: '100%' } }}
+                    />
+                    <button
+                      onClick={() => setIsScanning(false)}
+                      className="p-3 bg-red-500/20 text-red-400 text-sm font-bold hover:bg-red-500/30 transition text-center cursor-pointer"
+                    >
+                      Detener Escáner
+                    </button>
+                  </div>
+                )}
+              </div>
             )}
           </div>
         </div>

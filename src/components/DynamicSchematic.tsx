@@ -8,24 +8,29 @@ import { verifyKirchhoffAndOhm } from '../utils/kirchhoffAnalyzer';
 import TopologyStatusPanel from './analysis/TopologyStatusPanel';
 import KirchhoffLawsPanel from './analysis/KirchhoffLawsPanel';
 import FlowSchematic from './schematic/FlowSchematic';
-import { Activity, Sliders, Cpu, AlertTriangle, Network, ShieldCheck } from 'lucide-react';
+import { Activity, Sliders, Cpu, AlertTriangle, Network, ShieldCheck, Info, X } from 'lucide-react';
 
 interface DynamicSchematicProps {
   wires?: Wire[];
   analysis: CircuitAnalysisResult;
   vin: number;
   setVin: (v: number) => void;
+  useStrictSigns: boolean;
+  setUseStrictSigns: (v: boolean) => void;
 }
 
 export default function DynamicSchematic({
   wires = [],
   analysis,
   vin,
-  setVin
+  setVin,
+  useStrictSigns,
+  setUseStrictSigns
 }: DynamicSchematicProps) {
   const [activeTab, setActiveTab] = useState<'live_mirror' | 'topology' | 'kirchhoff' | 'measurements'>('measurements');
   const [diagramEngine, setDiagramEngine] = useState<'reactflow' | 'blueprint'>('reactflow');
   const [hoveredElement, setHoveredElement] = useState<{ type: 'resistor' | 'wire'; id: string } | null>(null);
+  const [isInfoModalOpen, setIsInfoModalOpen] = useState(false);
 
   const topology = analyzeTopology(wires, vin);
   const kirchhoff = verifyKirchhoffAndOhm(analysis, vin);
@@ -66,6 +71,24 @@ export default function DynamicSchematic({
           <span className="font-mono text-xs font-black text-sky-300 bg-sky-500/20 px-3 py-1 rounded-lg border border-sky-500/40 min-w-[56px] text-center">
             {vin} V
           </span>
+          <div className="flex items-center gap-2 ml-2 pl-2 border-l border-slate-800">
+            <button
+              onClick={() => setIsInfoModalOpen(true)}
+              className="p-1 rounded-full text-slate-400 hover:text-sky-400 hover:bg-sky-500/10 transition"
+              title="Información sobre Signos Algebraicos"
+            >
+              <Info size={16} />
+            </button>
+            <label className="flex items-center gap-2 text-[10px] font-mono font-bold text-slate-400 cursor-pointer uppercase">
+              <span>Signos (+/-)</span>
+              <input
+                type="checkbox"
+                checked={useStrictSigns}
+                onChange={(e) => setUseStrictSigns(e.target.checked)}
+                className="w-4 h-4 accent-sky-500 rounded cursor-pointer"
+              />
+            </label>
+          </div>
         </div>
       </div>
 
@@ -580,6 +603,47 @@ export default function DynamicSchematic({
           </div>
         )}
       </div>
+
+      {/* Info Modal para Signos Algebraicos */}
+      {isInfoModalOpen && (
+        <div className="fixed inset-0 z-[70] flex items-center justify-center bg-slate-950/80 backdrop-blur-sm p-4 animate-fade-in">
+          <div className="bg-slate-900 border border-sky-500/40 rounded-3xl w-full max-w-lg overflow-hidden flex flex-col shadow-2xl relative">
+            <button
+              onClick={() => setIsInfoModalOpen(false)}
+              className="absolute top-4 right-4 p-2 rounded-xl bg-slate-800 text-slate-400 hover:text-white hover:bg-slate-700 transition cursor-pointer"
+            >
+              <X size={20} />
+            </button>
+            <div className="p-6 flex flex-col gap-4">
+              <h3 className="text-xl font-black text-sky-400 flex items-center gap-2">
+                <Info size={24} /> Convención de Signos Pasiva
+              </h3>
+              <p className="text-sm text-slate-300 leading-relaxed">
+                Este simulador permite activar o desactivar los <strong>Signos Algebraicos Estrictos</strong>.
+              </p>
+              <ul className="text-sm text-slate-300 list-disc list-inside space-y-2">
+                <li>
+                  <strong className="text-emerald-400">Desactivado (Magnitud Absoluta):</strong> Verás las mediciones siempre positivas. Ideal para conocer la cantidad física real de voltaje o corriente disipada.
+                </li>
+                <li>
+                  <strong className="text-purple-400">Activado (Algebraico Estricto):</strong> Sigue la convención pasiva de signos de las guías de laboratorio. Si inyectas la polaridad inversa (p. ej. la corriente entra por el terminal negativo de referencia de una resistencia), las lecturas de Voltaje y Corriente serán <strong>negativas</strong>.
+                </li>
+              </ul>
+              {/* <div className="mt-4 p-4 bg-amber-500/10 border border-amber-500/30 rounded-xl">
+                <p className="text-xs text-amber-200/90 font-mono">
+                  💡 <strong>Nota (La Trampa del Laboratorio):</strong> Si tu guía te pide $I_o$ apuntando hacia abajo, pero la corriente física fluye hacia arriba porque invertiste la fuente, debes reportar el valor con signo negativo.
+                </p>
+              </div> */}
+              <button
+                onClick={() => setIsInfoModalOpen(false)}
+                className="w-full mt-2 py-3 rounded-xl bg-sky-600 hover:bg-sky-500 text-white font-bold transition"
+              >
+                Entendido
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

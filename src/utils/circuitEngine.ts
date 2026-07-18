@@ -143,7 +143,7 @@ export function buildNodes(wires: Wire[]): ElectricalNode[] {
 }
 
 // Solve electrical circuit using Modified Nodal Analysis (MNA) or Nodal relaxation
-export function solveCircuit(wires: Wire[], vin: number = 12): CircuitAnalysisResult {
+export function solveCircuit(wires: Wire[], vin: number = 12, useStrictSigns: boolean = true): CircuitAnalysisResult {
   const nodes = buildNodes(wires);
   const posNode = nodes.find(n => n.terminalIds.includes('POWER_POS'));
   const negNode = nodes.find(n => n.terminalIds.includes('POWER_NEG'));
@@ -237,9 +237,12 @@ export function solveCircuit(wires: Wire[], vin: number = 12): CircuitAnalysisRe
     const t2Node = nodes.find(n => n.terminalIds.includes(`${r.id}_T2`));
 
     if (t1Node && t2Node && t1Node !== t2Node) {
-      const vDrop = Math.abs(t1Node.voltage - t2Node.voltage);
+      let vDrop = t1Node.voltage - t2Node.voltage;
+      if (!useStrictSigns) {
+        vDrop = Math.abs(vDrop);
+      }
       const current_mA = (vDrop / r.value) * 1000;
-      const power_mW = vDrop * current_mA;
+      const power_mW = Math.abs(vDrop * current_mA);
 
       measurements[r.id] = {
         resistorId: r.id,
@@ -249,7 +252,7 @@ export function solveCircuit(wires: Wire[], vin: number = 12): CircuitAnalysisRe
       };
 
       if (t1Node === posNode || t2Node === posNode) {
-        totalCurrent += current_mA;
+        totalCurrent += Math.abs(current_mA);
       }
     }
   });
