@@ -50,9 +50,9 @@ export default function DynamicSchematic({
         </div>
 
         {/* Compact Floating Voltage Controller */}
-        <div className="flex items-center gap-3 bg-slate-950 px-3.5 py-1.5 rounded-xl border border-slate-800 shadow-md">
-          <Sliders className="text-sky-400" size={15} />
-          <span className="font-mono text-xs text-slate-400 font-bold">Suministro (V):</span>
+        <div className="w-full flex items-center justify-center gap-3 bg-slate-950 px-4 py-2.5 rounded-xl border border-slate-800 shadow-md">
+          <Sliders className="text-sky-400" size={16} />
+          <span className="font-mono text-xs text-slate-400 font-bold whitespace-nowrap">Suministro (V):</span>
           <input
             type="range"
             min="1"
@@ -60,10 +60,10 @@ export default function DynamicSchematic({
             step="1"
             value={vin}
             onChange={(e) => setVin(Number(e.target.value))}
-            className="w-28 h-1.5 bg-slate-800 rounded-lg cursor-pointer accent-sky-400"
-            title="Ajustar voltaje de fuente de 1V a 24V"
+            className="flex-1 w-full h-1.5 bg-slate-800 rounded-lg cursor-pointer accent-sky-400"
+            title="Ajustar voltaje de fuente de 1V a 30V"
           />
-          <span className="font-mono text-xs font-black text-sky-300 bg-sky-500/20 px-2.5 py-0.5 rounded-lg border border-sky-500/40 min-w-[48px] text-center">
+          <span className="font-mono text-xs font-black text-sky-300 bg-sky-500/20 px-3 py-1 rounded-lg border border-sky-500/40 min-w-[56px] text-center">
             {vin} V
           </span>
         </div>

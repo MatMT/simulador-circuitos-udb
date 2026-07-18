@@ -180,7 +180,6 @@
   .panel-left, .panel-right {
     display: flex;
     flex-direction: column;
-    height: 100%;
     min-height: 640px;
   }
 
@@ -309,7 +308,7 @@
   .board-card {
     display: flex;
     flex-direction: column;
-    height: 100%;
+    flex: 1;
     background: var(--bg-panel);
     border-radius: 20px;
     border: 1px solid rgba(255, 255, 255, 0.12);
@@ -658,7 +657,7 @@
   .schematic-card {
     display: flex;
     flex-direction: column;
-    height: 100%;
+    flex: 1;
     background: var(--bg-panel);
     border-radius: 20px;
     border: 1px solid rgba(255, 255, 255, 0.12);
