@@ -420,8 +420,13 @@ export default function CircuitTestBenchModal({
                           handleProcessImport(result[0].rawValue);
                         }
                       }}
-                      onError={(err) => console.error(err)}
-                      styles={{ container: { width: '100%', paddingBottom: '100%' } }}
+                      onError={(err) => {
+                        console.error(err);
+                        setImportError(
+                          'Error al iniciar la cámara. Verifica los permisos del navegador.'
+                        );
+                      }}
+                      styles={{ container: { width: '100%', aspectRatio: '1/1' } }}
                     />
                     <button
                       onClick={() => setIsScanning(false)}

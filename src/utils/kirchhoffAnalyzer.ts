@@ -175,7 +175,7 @@ export function verifyKirchhoffAndOhm(
 
       currNode.resistorConnections.forEach(conn => {
         const meas = measurements[conn.resistorId];
-        if (!meas || meas.current <= 0.001) return;
+        if (!meas || Math.abs(meas.current) <= 0.001) return;
 
         const oppTermId = conn.terminalIndex === 0 ? `${conn.resistorId}_T2` : `${conn.resistorId}_T1`;
         const nextNode = nodes.find(n => n.terminalIds.includes(oppTermId));
@@ -200,7 +200,7 @@ export function verifyKirchhoffAndOhm(
 
       path.resistors.forEach(rid => {
         const r = UDB_RESISTORS.find(item => item.id === rid)!;
-        const vDrop = measurements[rid].voltageDrop;
+        const vDrop = Math.abs(measurements[rid].voltageDrop);
         sumDrops += vDrop;
         voltageDrops.push({
           componentId: rid,
