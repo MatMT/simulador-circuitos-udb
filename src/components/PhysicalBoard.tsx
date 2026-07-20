@@ -60,7 +60,7 @@ export default function PhysicalBoard({
       
       // Procedural color change logic
       const proceduralSequence: WireColor[] = ['#ef4444', '#3b82f6', '#10b981', '#eab308', '#8b5cf6', '#f97316', '#111827'];
-      const currentIdx = proceduralSequence.indexOf(selectedColor);
+      const currentIdx = proceduralSequence.indexOf(selectedColor as WireColor);
       const nextColor = (currentIdx !== -1 && currentIdx < proceduralSequence.length - 1) 
         ? proceduralSequence[currentIdx + 1] 
         : proceduralSequence[0];
