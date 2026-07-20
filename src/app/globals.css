@@ -591,8 +591,9 @@
 
   .stack-badge {
     position: absolute;
-    top: -6px;
-    right: -6px;
+    top: -16px;
+    left: 50%;
+    translate: -50% 0;
     padding: 2px 5px;
     background: #3b82f6;
     color: white;

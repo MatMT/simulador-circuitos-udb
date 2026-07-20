@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Terminal, WireColor } from '../types/circuit';
 import { UDB_RESISTORS, UDB_TERMINALS, getTerminalById } from '../utils/circuitEngine';
 import { RotateCcw, Plug, Trash2, X, Info } from 'lucide-react';
@@ -32,6 +32,9 @@ export default function PhysicalBoard({
   const [draggingJunctionId, setDraggingJunctionId] = useState<string | null>(null);
   const [draggedIdx, setDraggedIdx] = useState<number | null>(null);
   const [dragOverIdx, setDragOverIdx] = useState<number | null>(null);
+
+  const pressTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const longPressTriggeredRef = useRef(false);
 
   const { cables, terminals, airJunctions, floatingCableId, addCable, connectFloatingCable, disconnectCable, removeCable, updateCableLayers, disconnectSpecificCable } = useCircuitStore();
 
@@ -161,6 +164,7 @@ export default function PhysicalBoard({
 
   const inspectedTerminal = inspectTerminalId ? getTerminalById(inspectTerminalId) : null;
   const inspectedWires = inspectTerminalId ? cablesList.filter(w => w.startTerminalId === inspectTerminalId || w.endTerminalId === inspectTerminalId) : [];
+  const sortedInspectedWires = [...inspectedWires].sort((a, b) => (b.layer || 1) - (a.layer || 1));
 
   const handleBoardClick = (e: React.MouseEvent<HTMLDivElement>) => {
     if (floatingCableId) {
@@ -456,13 +460,47 @@ export default function PhysicalBoard({
                   key={term.id}
                   className={`terminal-item ${isAirJunction ? 'air-junction-container' : ''}`}
                   style={{ left: `${term.x}%`, top: `${term.y}%`, cursor: isAirJunction ? 'grab' : 'pointer' }}
-                  onClick={(e) => handleTerminalClick(term.id, e)}
                   onMouseDown={(e) => {
                     if (isAirJunction) {
                       e.stopPropagation();
                       setDraggingJunctionId(term.id);
                       useCircuitStore.temporal.getState().pause();
+                      return;
                     }
+
+                    if (floatingCableId || selectedColor === 'eraser') return;
+
+                    if (stackCount > 0) {
+                      longPressTriggeredRef.current = false;
+                      pressTimerRef.current = setTimeout(() => {
+                        longPressTriggeredRef.current = true;
+                        const wires = cablesList.filter(w => w.startTerminalId === term.id || w.endTerminalId === term.id);
+                        const sorted = wires.sort((a,b) => (b.layer || 1) - (a.layer || 1));
+                        if (sorted.length > 0) {
+                          useCircuitStore.getState().disconnectSpecificCable(sorted[0].id, term.id);
+                        }
+                      }, 400);
+                    }
+                  }}
+                  onMouseUp={() => {
+                    if (pressTimerRef.current) {
+                      clearTimeout(pressTimerRef.current);
+                      pressTimerRef.current = null;
+                    }
+                  }}
+                  onMouseLeave={() => {
+                    if (pressTimerRef.current) {
+                      clearTimeout(pressTimerRef.current);
+                      pressTimerRef.current = null;
+                    }
+                  }}
+                  onClick={(e) => {
+                    if (longPressTriggeredRef.current) {
+                      e.stopPropagation();
+                      longPressTriggeredRef.current = false;
+                      return;
+                    }
+                    handleTerminalClick(term.id, e);
                   }}
                 >
                   <div className={`terminal-socket ${isActive ? 'active' : ''} ${isPower ? (term.type === 'power_pos' ? 'power-pos' : 'power-neg') : ''} ${isAirJunction ? 'air-junction' : ''}`} style={isAirJunction ? { background: '#94a3b8', border: '2px solid #cbd5e1', width: '20px', height: '20px', boxShadow: '0 4px 10px rgba(0,0,0,0.5)' } : undefined}>
@@ -532,8 +570,7 @@ export default function PhysicalBoard({
                   onDrop={(e) => {
                     e.preventDefault();
                     if (draggedIdx !== null && inspectTerminalId) {
-                      const sortedWires = [...inspectedWires].sort((a, b) => (b.layer || 1) - (a.layer || 1));
-                      const cableToDisconnect = sortedWires[draggedIdx];
+                      const cableToDisconnect = sortedInspectedWires[draggedIdx];
                       if (cableToDisconnect) {
                         disconnectSpecificCable(cableToDisconnect.id, inspectTerminalId);
                         setInspectTerminalId(null);
@@ -567,8 +604,6 @@ export default function PhysicalBoard({
 
                 <div className="max-h-80 overflow-y-auto pr-1">
                 {(() => {
-                  const sortedInspectedWires = [...inspectedWires].sort((a, b) => (b.layer || 1) - (a.layer || 1));
-                  
                   return sortedInspectedWires.map((wire, idx) => {
                     const tFrom = getTerminalById(wire.startTerminalId);
                     const tTo = wire.endTerminalId ? getTerminalById(wire.endTerminalId) : null;
@@ -651,7 +686,7 @@ export default function PhysicalBoard({
                     <div className="w-4 h-2 bg-black/40 mt-1 rounded-sm" />
                   </div>
                   
-                  {[...inspectedWires].sort((a, b) => (a.layer || 1) - (b.layer || 1)).map((wire, idx) => (
+                  {[...sortedInspectedWires].reverse().map((wire, idx) => (
                     <div key={wire.id} className="relative flex flex-col items-center transition-all duration-300">
                       {/* Cuerpo de la Banana */}
                       <div className="w-14 h-11 rounded-sm shadow-[0_4px_10px_rgba(0,0,0,0.5)] border-b-4 border-black/30 flex items-center justify-center relative z-20" style={{ backgroundColor: wire.color }}>
