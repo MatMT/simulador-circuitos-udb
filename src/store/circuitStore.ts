@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { temporal } from 'zundo';
 import { CircuitState, TerminalId, CableId, ComponentId, WireColor, Cable } from '../types/circuitState';
 import { handleDisconnectCable, handleDisconnectSpecificCable, handleReconnectCable } from '../utils/cablesLogic';
 import { Wire } from '../types/circuit';
@@ -17,11 +18,12 @@ interface CircuitStoreState extends CircuitState {
   registerComponent: (component: Component) => void;
   createAirJunction: (x: number, y: number) => void;
   updateAirJunction: (id: TerminalId, x: number, y: number) => void;
+  removeAirJunction: (id: TerminalId) => void;
   disconnectSpecificCable: (cableId: CableId, terminalId: TerminalId) => void;
   updateCableLayers: (updates: { cableId: CableId; layer: number }[]) => void;
 }
 
-export const useCircuitStore = create<CircuitStoreState>((set, get) => ({
+export const useCircuitStore = create<CircuitStoreState>()(temporal((set, get) => ({
   cables: {},
   terminals: {},
   airJunctions: {},
@@ -94,6 +96,12 @@ export const useCircuitStore = create<CircuitStoreState>((set, get) => ({
         [id]: { ...state.airJunctions[id], x, y }
       }
     };
+  }),
+
+  removeAirJunction: (id) => set((state) => {
+    const newAirJunctions = { ...state.airJunctions };
+    delete newAirJunctions[id];
+    return { airJunctions: newAirJunctions };
   }),
 
   connectFloatingCable: (newTerminalId) => set((state) => {
@@ -283,6 +291,17 @@ export const useCircuitStore = create<CircuitStoreState>((set, get) => ({
       }
     };
   })
+}), {
+  partialize: (state) => {
+    // Solo guardamos en el historial las conexiones y el estado de componentes
+    // Ignoramos floatingCableId para evitar historial sucio al arrastrar cables
+    return {
+      cables: state.cables,
+      terminals: state.terminals,
+      airJunctions: state.airJunctions,
+      components: state.components
+    };
+  }
 }));
 
 // Adapter selector for MNA engine

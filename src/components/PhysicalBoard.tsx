@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Terminal, WireColor } from '../types/circuit';
 import { UDB_RESISTORS, UDB_TERMINALS, getTerminalById } from '../utils/circuitEngine';
 import { RotateCcw, Plug, Trash2, X, Info } from 'lucide-react';
@@ -38,6 +38,26 @@ export default function PhysicalBoard({
   const cablesList = Object.values(cables);
   const activeTerminalId = floatingCableId ? cables[floatingCableId]?.startTerminalId : null;
 
+  // Global Keyboard Shortcuts
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z') {
+        e.preventDefault();
+        if (e.shiftKey) {
+          useCircuitStore.temporal.getState().redo();
+        } else {
+          useCircuitStore.temporal.getState().undo();
+        }
+      } else if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'y') {
+        e.preventDefault();
+        useCircuitStore.temporal.getState().redo();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
+
   const resolveTerminal = (id: string) => {
     return getTerminalById(id) || (airJunctions[id] ? { id, label: 'Empalme', type: 'resistor' as const, x: airJunctions[id].x, y: airJunctions[id].y } : null);
   };
@@ -45,7 +65,7 @@ export default function PhysicalBoard({
   const handleTerminalClick = (terminalId: string, e: React.MouseEvent) => {
     e.stopPropagation();
 
-    const terminal = terminals[terminalId];
+    const terminal = resolveTerminal(terminalId);
     
     // Stack check for UI
     const stackCount = cablesList.filter(w => w.startTerminalId === terminalId || w.endTerminalId === terminalId).length;
@@ -68,28 +88,29 @@ export default function PhysicalBoard({
       // Switch back to red if we are in eraser mode and reconnecting a floating cable
       onSelectColor(selectedColor === 'eraser' ? '#ef4444' : nextColor);
     } else {
-      if (terminal?.connectedCableId) {
-        // Desconectar (volver flotante)
-        disconnectCable(terminalId);
-        if (selectedColor === 'eraser') onSelectColor('#ef4444'); // Auto quit eraser if manipulating cable
-      } else {
-        if (selectedColor === 'eraser') return; // Cannot start wire in eraser mode
-
-        // Iniciar nuevo cable
-        const dynamicLayer = stackCount + 1;
-        
-        // Forced colors
-        let cableColorToUse = selectedColor as WireColor;
-        if (terminalId === 'W1_O' || terminalId === 'W1_I' || terminalId === 'M1_A' || terminalId === 'M1_V') {
-          cableColorToUse = '#ef4444'; // Rojo
-          onSelectColor('#ef4444');
-        } else if (terminalId === 'W1_U' || terminalId === 'M1_COM' || terminalId === 'POWER_NEG') {
-          cableColorToUse = '#111827'; // Negro
-          onSelectColor('#111827');
+      if (selectedColor === 'eraser') {
+        // Permitir borrar empalmes al aire directamente
+        if (terminalId.startsWith('air-')) {
+          const connectedCables = cablesList.filter(c => c.startTerminalId === terminalId || c.endTerminalId === terminalId);
+          connectedCables.forEach(c => removeCable(c.id));
+          useCircuitStore.getState().removeAirJunction(terminalId);
         }
-
-        addCable(terminalId, cableColorToUse, dynamicLayer, dynamicLayer - 1);
+        return; 
       }
+      
+      // Iniciar nuevo cable SIEMPRE, incluso si el borne está ocupado
+      const dynamicLayer = stackCount + 1;
+      
+      let cableColorToUse = selectedColor as WireColor;
+      if (terminalId === 'W1_O' || terminalId === 'W1_I' || terminalId === 'M1_A' || terminalId === 'M1_V') {
+        cableColorToUse = '#ef4444';
+        onSelectColor('#ef4444');
+      } else if (terminalId === 'W1_U' || terminalId === 'M1_COM' || terminalId === 'POWER_NEG') {
+        cableColorToUse = '#111827';
+        onSelectColor('#111827');
+      }
+
+      addCable(terminalId, cableColorToUse, dynamicLayer, dynamicLayer - 1);
     }
   };
 
@@ -228,6 +249,26 @@ export default function PhysicalBoard({
             <Trash2 size={14} />
             <span>BORRADOR {selectedColor === 'eraser' && '✓'}</span>
           </button>
+          
+          <div className="w-px h-6 bg-slate-700/50 mx-1"></div>
+          
+          {/* UNDO / REDO */}
+          <button
+            onClick={() => useCircuitStore.temporal.getState().undo()}
+            disabled={useCircuitStore.temporal.getState().pastStates.length === 0}
+            className="p-1.5 text-slate-300 hover:text-white bg-slate-800 hover:bg-slate-700 disabled:opacity-30 disabled:cursor-not-allowed rounded-lg transition-colors cursor-pointer"
+            title="Deshacer (Ctrl+Z)"
+          >
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M3 7v6h6"/><path d="M21 17a9 9 0 00-9-9 9 9 0 00-6 2.3L3 13"/></svg>
+          </button>
+          <button
+            onClick={() => useCircuitStore.temporal.getState().redo()}
+            disabled={useCircuitStore.temporal.getState().futureStates.length === 0}
+            className="p-1.5 text-slate-300 hover:text-white bg-slate-800 hover:bg-slate-700 disabled:opacity-30 disabled:cursor-not-allowed rounded-lg transition-colors cursor-pointer"
+            title="Rehacer (Ctrl+Y)"
+          >
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M21 7v6h-6"/><path d="M3 17a9 9 0 019-9 9 9 0 016 2.3l3 2.7"/></svg>
+          </button>
         </div>
       </div>
 
@@ -256,10 +297,16 @@ export default function PhysicalBoard({
           }
         }}
         onMouseUp={() => {
-          if (draggingJunctionId) setDraggingJunctionId(null);
+          if (draggingJunctionId) {
+            setDraggingJunctionId(null);
+            useCircuitStore.temporal.getState().resume();
+          }
         }}
         onMouseLeave={() => {
-          if (draggingJunctionId) setDraggingJunctionId(null);
+          if (draggingJunctionId) {
+            setDraggingJunctionId(null);
+            useCircuitStore.temporal.getState().resume();
+          }
         }}
       >
         <div className="acrylic-plate" style={{ background: 'transparent', boxShadow: 'none', border: 'none', padding: 0 }} onClick={handleBoardClick}>
@@ -414,6 +461,7 @@ export default function PhysicalBoard({
                     if (isAirJunction) {
                       e.stopPropagation();
                       setDraggingJunctionId(term.id);
+                      useCircuitStore.temporal.getState().pause();
                     }
                   }}
                 >
@@ -468,8 +516,56 @@ export default function PhysicalBoard({
             </div>
 
             <div className="flex flex-col md:flex-row gap-6">
-              {/* Columna Izquierda: Lista arrastrable */}
-              <div className="flex-1 flex flex-col gap-2 max-h-80 overflow-y-auto pr-1">
+              {/* Columna Izquierda: Cables Conectados y Dropzone */}
+              <div className="flex-1 flex flex-col gap-2">
+                
+                {/* Dropzone to create air junction immediately */}
+                <div
+                  onDragEnter={(e) => e.preventDefault()}
+                  onDragOver={(e) => {
+                    e.preventDefault();
+                    if (draggedIdx !== null) setDragOverIdx(-1);
+                  }}
+                  onDragLeave={() => {
+                    if (dragOverIdx === -1) setDragOverIdx(null);
+                  }}
+                  onDrop={(e) => {
+                    e.preventDefault();
+                    if (draggedIdx !== null && inspectTerminalId) {
+                      const sortedWires = [...inspectedWires].sort((a, b) => (b.layer || 1) - (a.layer || 1));
+                      const cableToDisconnect = sortedWires[draggedIdx];
+                      if (cableToDisconnect) {
+                        disconnectSpecificCable(cableToDisconnect.id, inspectTerminalId);
+                        setInspectTerminalId(null);
+                        
+                        // Update mousePos immediately and create air junction
+                        const viewport = document.querySelector('.board-viewport');
+                        if (viewport) {
+                          const pRect = viewport.getBoundingClientRect();
+                          const x = ((e.clientX - pRect.left) / pRect.width) * 100;
+                          const y = ((e.clientY - pRect.top) / pRect.height) * 100;
+                          setMousePos({ x, y });
+                          
+                          // SetTimeout to let state propagate the floatingCableId before connecting
+                          setTimeout(() => {
+                             useCircuitStore.getState().createAirJunction(x, y);
+                          }, 50);
+                        }
+                      }
+                    }
+                    setDraggedIdx(null);
+                    setDragOverIdx(null);
+                  }}
+                  className={`mb-2 p-4 border-2 border-dashed rounded-xl flex items-center justify-center transition-all
+                    ${dragOverIdx === -1 ? 'border-sky-400 bg-sky-900/30 shadow-[0_0_15px_rgba(56,189,248,0.2)]' : 'border-slate-700 bg-slate-800/30 hover:border-slate-500'}
+                  `}
+                >
+                  <span className={`text-xs font-mono font-bold text-center ${dragOverIdx === -1 ? 'text-sky-300' : 'text-slate-400'}`}>
+                    ⤓ Suelta aquí para crear <br/>un empalme al aire
+                  </span>
+                </div>
+
+                <div className="max-h-80 overflow-y-auto pr-1">
                 {(() => {
                   const sortedInspectedWires = [...inspectedWires].sort((a, b) => (b.layer || 1) - (a.layer || 1));
                   
@@ -477,7 +573,7 @@ export default function PhysicalBoard({
                     const tFrom = getTerminalById(wire.startTerminalId);
                     const tTo = wire.endTerminalId ? getTerminalById(wire.endTerminalId) : null;
                     const isOpposite = wire.startTerminalId === inspectTerminalId ? tTo : tFrom;
-                    const effLayer = wire.layer || 1;
+                    const effLayer = sortedInspectedWires.length - idx;
                     const isDragging = draggedIdx === idx;
                     const isDragOver = dragOverIdx === idx;
 
@@ -539,37 +635,6 @@ export default function PhysicalBoard({
                     );
                   });
                 })()}
-
-                {/* Dropzone to disconnect specific cable */}
-                <div
-                  onDragEnter={(e) => e.preventDefault()}
-                  onDragOver={(e) => {
-                    e.preventDefault();
-                    if (draggedIdx !== null) setDragOverIdx(-1);
-                  }}
-                  onDragLeave={() => {
-                    if (dragOverIdx === -1) setDragOverIdx(null);
-                  }}
-                  onDrop={(e) => {
-                    e.preventDefault();
-                    if (draggedIdx !== null && inspectTerminalId) {
-                      const sortedWires = [...inspectedWires].sort((a, b) => (b.layer || 1) - (a.layer || 1));
-                      const cableToDisconnect = sortedWires[draggedIdx];
-                      if (cableToDisconnect) {
-                        disconnectSpecificCable(cableToDisconnect.id, inspectTerminalId);
-                        setInspectTerminalId(null);
-                      }
-                    }
-                    setDraggedIdx(null);
-                    setDragOverIdx(null);
-                  }}
-                  className={`mt-2 p-4 border-2 border-dashed rounded-xl flex items-center justify-center transition-all
-                    ${dragOverIdx === -1 ? 'border-sky-400 bg-sky-900/30' : 'border-slate-700 bg-slate-800/30'}
-                  `}
-                >
-                  <span className={`text-xs font-mono font-bold ${dragOverIdx === -1 ? 'text-sky-300' : 'text-slate-500'}`}>
-                    ⤓ Suelta aquí para mantener flotando en el aire
-                  </span>
                 </div>
 
                 <div className="text-[10px] text-slate-500 mt-1 italic text-center">

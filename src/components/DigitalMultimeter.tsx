@@ -1,14 +1,25 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useCircuitStore } from '../store/circuitStore';
 import { MultimeterMode } from '../types/instruments';
+import { Save, History, Trash2, ChevronDown, ChevronUp } from 'lucide-react';
 
 interface DigitalMultimeterProps {
   value: number;
   error?: 'OL' | 'FUSE_BLOWN';
 }
 
+interface Measurement {
+  id: string;
+  timestamp: Date;
+  mode: string;
+  value: string;
+  unit: string;
+}
+
 export default function DigitalMultimeter({ value, error }: DigitalMultimeterProps) {
   const { components, setMultimeterMode, registerComponent } = useCircuitStore();
+  const [history, setHistory] = useState<Measurement[]>([]);
+  const [isHistoryOpen, setIsHistoryOpen] = useState(false);
   const multimeterId = 'M1';
   const multimeter = components[multimeterId];
 
@@ -57,6 +68,18 @@ export default function DigitalMultimeter({ value, error }: DigitalMultimeterPro
     }
   }
 
+  const handleSaveMeasurement = () => {
+    if (error === 'OL' || error === 'FUSE_BLOWN') return;
+    setHistory(prev => [{
+      id: Date.now().toString(),
+      timestamp: new Date(),
+      mode,
+      value: displayValue,
+      unit
+    }, ...prev]);
+    setIsHistoryOpen(true);
+  };
+
   return (
     <div className="bg-slate-900 border border-slate-700 rounded-xl p-5 flex flex-col items-center gap-5 shadow-2xl relative w-full">
       <div className="absolute top-3 left-4 flex items-center gap-2">
@@ -82,6 +105,17 @@ export default function DigitalMultimeter({ value, error }: DigitalMultimeterPro
            <span className={mode === 'A' ? 'text-slate-900' : ''}>DC A</span>
            <span className={mode === 'OHMS' ? 'text-slate-900' : ''}>OHM</span>
         </div>
+
+        {/* Botón Guardar */}
+        <button 
+          onClick={handleSaveMeasurement}
+          disabled={error === 'OL' || error === 'FUSE_BLOWN'}
+          className="absolute bottom-2 left-2 z-20 bg-slate-800 text-sky-400 hover:text-sky-300 hover:bg-slate-700 p-1.5 rounded-lg border border-slate-700 shadow flex items-center gap-1 transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+          title="Guardar medición actual"
+        >
+          <Save size={14} />
+          <span className="text-[10px] font-bold">GUARDAR</span>
+        </button>
       </div>
 
       {/* Mode Selector Knob */}
@@ -115,6 +149,62 @@ export default function DigitalMultimeter({ value, error }: DigitalMultimeterPro
           {mode === 'A' && <span>Conecta bornes: <strong className="text-sky-400">COM</strong> y <strong className="text-amber-400">A</strong> en serie</span>}
           {mode === 'OHMS' && <span>Conecta bornes: <strong className="text-sky-400">COM</strong> y <strong className="text-red-400">V/Ω</strong> (Sin Energía)</span>}
         </div>
+      </div>
+
+      {/* Panel de Historial */}
+      <div className="w-full mt-2">
+        <button
+          onClick={() => setIsHistoryOpen(!isHistoryOpen)}
+          className="w-full flex items-center justify-between p-2.5 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-lg transition-colors cursor-pointer text-slate-300"
+        >
+          <div className="flex items-center gap-2 text-xs font-bold font-mono">
+            <History size={16} className="text-sky-400" />
+            <span>HISTORIAL DE MEDICIONES ({history.length})</span>
+          </div>
+          {isHistoryOpen ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+        </button>
+
+        {isHistoryOpen && (
+          <div className="mt-2 bg-slate-950 border border-slate-800 rounded-lg overflow-hidden flex flex-col">
+            {history.length === 0 ? (
+              <div className="p-4 text-center text-xs text-slate-500 font-mono italic">
+                No hay lecturas guardadas.
+              </div>
+            ) : (
+              <>
+                <div className="max-h-48 overflow-y-auto">
+                  {history.map((item, idx) => (
+                    <div key={item.id} className={`flex items-center justify-between p-2.5 text-xs font-mono border-b border-slate-800/50 ${idx === 0 ? 'bg-sky-900/10' : ''}`}>
+                      <div className="flex flex-col gap-0.5">
+                        <span className="text-slate-400 text-[10px]">
+                          {item.timestamp.toLocaleTimeString()}
+                        </span>
+                        <span className="font-bold text-slate-200">
+                          {item.mode}: <span className="text-sky-300">{item.value} {item.unit}</span>
+                        </span>
+                      </div>
+                      <button 
+                        onClick={() => setHistory(h => h.filter(x => x.id !== item.id))}
+                        className="p-1.5 text-slate-500 hover:text-red-400 hover:bg-slate-800 rounded transition-colors cursor-pointer"
+                        title="Eliminar lectura"
+                      >
+                        <Trash2 size={14} />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+                <div className="p-2 bg-slate-900 border-t border-slate-800 flex justify-end">
+                  <button
+                    onClick={() => setHistory([])}
+                    className="text-[10px] uppercase font-bold text-slate-400 hover:text-red-400 transition-colors cursor-pointer flex items-center gap-1"
+                  >
+                    Borrar Todo
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );

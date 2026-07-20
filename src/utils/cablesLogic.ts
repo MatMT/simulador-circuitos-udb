@@ -56,15 +56,28 @@ export const handleDisconnectSpecificCable = (
 
   let newLayer = cable.layer || 1;
   if (remainingTerminalId) {
-    const remainingStackCount = Object.values(state.cables).filter(
+    const remainingCables = Object.values(state.cables).filter(
       (c) => (c.startTerminalId === remainingTerminalId || c.endTerminalId === remainingTerminalId) && c.id !== cableId
-    ).length;
-    newLayer = remainingStackCount + 1;
+    );
+    const maxLayer = remainingCables.reduce((max, c) => Math.max(max, c.layer || 1), 0);
+    newLayer = maxLayer + 1;
   }
 
   const newTerminals = { ...state.terminals };
   if (terminal.connectedCableId === cableId) {
     newTerminals[terminalIdToDisconnect] = { ...terminal, connectedCableId: null };
+  }
+
+  // Si el cable no tiene ningún otro extremo conectado (era flotante), lo eliminamos por completo
+  if (!remainingTerminalId) {
+    const newCables = { ...state.cables };
+    delete newCables[cableId];
+    return {
+      ...state,
+      terminals: newTerminals,
+      cables: newCables,
+      floatingCableId: state.floatingCableId === cableId ? null : state.floatingCableId,
+    };
   }
 
   return {
@@ -110,15 +123,17 @@ export const handleReconnectCable = (
     };
   }
 
-  const startStackCount = Object.values(state.cables).filter(
+  const startCables = Object.values(state.cables).filter(
     (c) => (c.startTerminalId === cable.startTerminalId || c.endTerminalId === cable.startTerminalId) && c.id !== cableId
-  ).length;
-
-  const endStackCount = Object.values(state.cables).filter(
+  );
+  const endCables = Object.values(state.cables).filter(
     (c) => (c.startTerminalId === newTerminalId || c.endTerminalId === newTerminalId) && c.id !== cableId
-  ).length;
+  );
 
-  const newLayer = Math.max(startStackCount, endStackCount) + 1;
+  const startMaxLayer = startCables.reduce((max, c) => Math.max(max, c.layer || 1), 0);
+  const endMaxLayer = endCables.reduce((max, c) => Math.max(max, c.layer || 1), 0);
+
+  const newLayer = Math.max(startMaxLayer, endMaxLayer) + 1;
 
   return {
     ...state,
