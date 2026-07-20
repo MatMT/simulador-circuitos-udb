@@ -26,6 +26,7 @@ export default function PhysicalBoard({
   onSelectColor,
 }: PhysicalBoardProps) {
   const [hoveredWireId, setHoveredWireId] = useState<string | null>(null);
+  const [hoveredTerminalId, setHoveredTerminalId] = useState<string | null>(null);
   const [mousePos, setMousePos] = useState<{ x: number; y: number } | null>(null);
   const [inspectTerminalId, setInspectTerminalId] = useState<string | null>(null);
   const [activeLayerFilter] = useState<number>(0);
@@ -375,7 +376,7 @@ export default function PhysicalBoard({
               }
 
               const pathData = getWirePath(t1, t2, wire.order, terminalStackCounts[wire.startTerminalId] || 1, effectiveLayer);
-              const isHovered = hoveredWireId === wire.id;
+              const isHovered = hoveredWireId === wire.id || (hoveredTerminalId !== null && (wire.startTerminalId === hoveredTerminalId || wire.endTerminalId === hoveredTerminalId));
 
               return (
                 <g
@@ -393,9 +394,9 @@ export default function PhysicalBoard({
                     }
                   }}
                 >
-                  <path d={pathData.path} fill="none" stroke="#000000" strokeWidth={isHovered ? "2.6" : "2"} strokeOpacity="0.65" strokeLinecap="round" />
-                  <path d={pathData.path} fill="none" stroke={wire.color} strokeWidth={isHovered ? "1.9" : "1.5"} strokeLinecap="round" filter="url(#wire-shadow)" />
-                  <path d={pathData.path} fill="none" stroke="#ffffff" strokeWidth={isHovered ? "0.6" : "0.35"} strokeOpacity="0.6" strokeDasharray="1.5 3" strokeLinecap="round" />
+                  <path d={pathData.path} fill="none" stroke="#000000" strokeWidth="2" strokeOpacity="0.65" strokeLinecap={isHovered ? "butt" : "round"} strokeDasharray={isHovered ? "2 3" : undefined} />
+                  <path d={pathData.path} fill="none" stroke={wire.color} strokeWidth="1.5" strokeLinecap="round" filter="url(#wire-shadow)" />
+                  <path d={pathData.path} fill="none" stroke="#ffffff" strokeWidth="0.35" strokeOpacity="0.6" strokeDasharray="1.5 3" strokeLinecap="round" />
                   {isHovered && (
                     <g transform={`translate(${pathData.midX}, ${pathData.midY})`}>
                       <circle cx="0" cy="0" r="2.5" fill="#ef4444" stroke="#ffffff" strokeWidth="0.5" />
@@ -460,6 +461,14 @@ export default function PhysicalBoard({
                   key={term.id}
                   className={`terminal-item ${isAirJunction ? 'air-junction-container' : ''}`}
                   style={{ left: `${term.x}%`, top: `${term.y}%`, cursor: isAirJunction ? 'grab' : 'pointer' }}
+                  onMouseEnter={() => setHoveredTerminalId(term.id)}
+                  onMouseLeave={() => {
+                    setHoveredTerminalId(null);
+                    if (pressTimerRef.current) {
+                      clearTimeout(pressTimerRef.current);
+                      pressTimerRef.current = null;
+                    }
+                  }}
                   onMouseDown={(e) => {
                     if (isAirJunction) {
                       e.stopPropagation();
@@ -483,12 +492,6 @@ export default function PhysicalBoard({
                     }
                   }}
                   onMouseUp={() => {
-                    if (pressTimerRef.current) {
-                      clearTimeout(pressTimerRef.current);
-                      pressTimerRef.current = null;
-                    }
-                  }}
-                  onMouseLeave={() => {
                     if (pressTimerRef.current) {
                       clearTimeout(pressTimerRef.current);
                       pressTimerRef.current = null;
