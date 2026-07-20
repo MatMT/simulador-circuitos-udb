@@ -352,9 +352,13 @@ export function solveCircuit(wires: Wire[], vin: number = 12, useStrictSigns: bo
   const Iw_mA = getClusterLeavingCurrent('W1_I', wires, nodes, totalCurrent);
   const nodeO = nodes.find(n => n.terminalIds.includes('W1_O'));
   const nodeU = nodes.find(n => n.terminalIds.includes('W1_U'));
-  const voltageO = nodeO ? nodeO.voltage : 0;
-  const voltageU = nodeU ? nodeU.voltage : 0;
-  const wattmeterPower = (voltageO - voltageU) * (Iw_mA / 1000);
+  
+  let wattmeterPower = 0;
+  if (nodeO && nodeU) {
+    const voltageO = nodeO.voltage;
+    const voltageU = nodeU.voltage;
+    wattmeterPower = (voltageO - voltageU) * (-Iw_mA / 1000);
+  }
 
   // 5. Multimeter Logic
   const multResult: { value: number; error?: 'OL' | 'FUSE_BLOWN' } = { value: 0 };

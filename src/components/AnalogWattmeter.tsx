@@ -56,12 +56,66 @@ export default function AnalogWattmeter({ realPower }: AnalogWattmeterProps) {
         
         {/* Aguja */}
         <div 
-          className={`w-1.5 h-24 bg-[#e11d48] origin-bottom rounded-t-full transition-transform duration-300 ease-out shadow-md z-20 ${deflection.isClippingHigh ? 'animate-bounce' : ''}`}
-          style={{ transform: `rotate(${deflection.cssRotationDegrees}deg)` }}
+          className={`absolute w-1.5 h-24 bg-[#e11d48] origin-bottom rounded-t-full transition-transform duration-300 ease-out shadow-md z-20 ${deflection.isClippingHigh ? 'animate-bounce' : ''}`}
+          style={{ bottom: '0px', transform: `rotate(${deflection.cssRotationDegrees}deg)` }}
         />
         
         {/* Base Aguja */}
         <div className="absolute w-6 h-6 bg-slate-950 rounded-full bottom-[-10px] z-30 shadow-lg border-2 border-slate-700" />
+        
+        {/* Escala Superior (0-10) */}
+        <div className="absolute inset-0 pointer-events-none z-10 flex justify-center items-end">
+          {Array.from({ length: 51 }).map((_, i) => {
+            const angle = -45 + (i / 50) * 90;
+            const isMajor = i % 10 === 0;
+            const isMedium = i % 5 === 0 && !isMajor;
+            const num = (i / 10) * 2;
+            return (
+              <div 
+                key={`top-${i}`} 
+                className="absolute origin-bottom h-[100px] flex flex-col items-center justify-start"
+                style={{ transform: `rotate(${angle}deg)`, bottom: '0px' }}
+              >
+                <div className={`bg-slate-800 ${isMajor ? 'w-[1.5px] h-2.5' : isMedium ? 'w-[1.5px] h-1.5' : 'w-px h-1'}`} />
+                {isMajor && (
+                  <span 
+                    className="text-[9px] font-bold text-slate-800 mt-0.5 leading-none" 
+                    style={{ transform: `rotate(${-angle}deg)` }}
+                  >
+                    {num}
+                  </span>
+                )}
+              </div>
+            );
+          })}
+        </div>
+
+        {/* Escala Inferior (0-3) */}
+        <div className="absolute inset-0 pointer-events-none z-10 flex justify-center items-end">
+          {Array.from({ length: 31 }).map((_, i) => {
+            const angle = -45 + (i / 30) * 90;
+            const isMajor = i % 10 === 0;
+            const isMedium = i % 5 === 0 && !isMajor;
+            const num = i / 10;
+            return (
+              <div 
+                key={`bot-${i}`} 
+                className="absolute origin-bottom h-[75px] flex flex-col items-center justify-start"
+                style={{ transform: `rotate(${angle}deg)`, bottom: '0px' }}
+              >
+                <div className={`bg-slate-800 ${isMajor ? 'w-[1.5px] h-2.5' : isMedium ? 'w-[1.5px] h-1.5' : 'w-px h-1'}`} />
+                {isMajor && (
+                  <span 
+                    className="text-[9px] font-bold text-slate-800 mt-0.5 leading-none" 
+                    style={{ transform: `rotate(${-angle}deg)` }}
+                  >
+                    {num}
+                  </span>
+                )}
+              </div>
+            );
+          })}
+        </div>
       </div>
 
       <div className="flex gap-4 w-full justify-between mt-2">
@@ -98,13 +152,57 @@ export default function AnalogWattmeter({ realPower }: AnalogWattmeterProps) {
         </div>
       </div>
 
-      <div className="bg-slate-950 p-3 rounded-lg border border-slate-800 w-full text-center shadow-inner">
-        <div className="text-xs text-amber-400 font-mono font-black">
-          Factor de Escala: x{factors.recommendedFactor} <span className="text-slate-500 font-normal">({factors.recommendedScale})</span>
+      <div className="bg-slate-950 p-3 rounded-lg border border-slate-800 w-full shadow-inner flex flex-col gap-2">
+        <div className="flex justify-between items-center px-1">
+          <div className="text-xs text-amber-400 font-mono font-black flex flex-col">
+            <span>Factor: x{factors.recommendedFactor}</span>
+            <span className="text-[9px] text-slate-500 font-normal">Escala: 0-{factors.recommendedScale}</span>
+          </div>
+          <div className="text-right">
+            <div className="text-[10px] text-slate-500 font-mono">Max: {pMax} W</div>
+            <div className="text-xs text-slate-300 font-bold font-mono">Lectura: {realPower.toFixed(2)} W</div>
+          </div>
         </div>
-        <div className="text-[10px] text-slate-500 font-mono mt-1.5 flex justify-between px-2">
-          <span>Max: {pMax} W</span>
-          <span>Lectura: <span className="text-slate-300 font-bold">{realPower.toFixed(2)} W</span></span>
+
+        {/* Reference Table */}
+        <div className="mt-2 border border-slate-700 bg-slate-900 overflow-hidden text-[9px] font-mono select-none">
+          <div className="flex border-b border-slate-700">
+          <div className="w-8 flex-shrink-0 border-r border-slate-700 flex flex-col items-center justify-center bg-slate-800 text-slate-400 p-0.5">
+            <span>U/V</span><span>I/A</span>
+          </div>
+          {[3, 10, 30, 100, 300, 1000].map(v => (
+            <div key={`header-${v}`} className={`flex-1 text-center py-1 border-r border-slate-700 last:border-0 ${v === vRange ? 'bg-sky-900/40 text-sky-300 font-bold' : 'text-slate-400'}`}>
+              {v}
+            </div>
+          ))}
+        </div>
+        {[0.1, 0.3, 1, 3, 10, 30].map((i, r) => (
+          <div key={i} className="flex border-b border-slate-700 last:border-0">
+            <div className={`w-8 flex-shrink-0 border-r border-slate-700 text-center py-1 ${i === iRange ? 'bg-sky-900/40 text-sky-300 font-bold' : 'bg-slate-800 text-slate-400'}`}>
+              {i}
+            </div>
+            {[3, 10, 30, 100, 300, 1000].map((v, c) => {
+              const exponent = Math.floor((c + (r % 2)) / 2) + Math.floor(r / 2) - 1;
+              const displayFactor = Math.pow(10, exponent).toString();
+              
+              const isScale10 = (r + c) % 2 !== 0;
+              const isSelected = v === vRange && i === iRange;
+              
+              return (
+                <div 
+                  key={`${i}-${v}`} 
+                  className={`flex-1 flex items-center justify-center border-r border-slate-700 last:border-0 relative ${isScale10 ? 'bg-slate-950 text-slate-300' : 'bg-slate-100 text-slate-900'} ${isSelected ? 'ring-2 ring-inset ring-sky-500 z-10' : ''}`}
+                >
+                  <span className="font-bold tracking-tighter">{displayFactor}</span>
+                </div>
+              );
+            })}
+          </div>
+        ))}
+          <div className="flex bg-slate-950 p-1 text-[8px] gap-2 items-center justify-center border-t border-slate-700 text-slate-400">
+            <div className="flex items-center gap-1"><div className="w-3 h-2 bg-slate-950 border border-slate-700"></div> SKALA 0-10</div>
+            <div className="flex items-center gap-1"><div className="w-3 h-2 bg-slate-100 border border-slate-400"></div> SKALA 0-3</div>
+          </div>
         </div>
       </div>
     </div>

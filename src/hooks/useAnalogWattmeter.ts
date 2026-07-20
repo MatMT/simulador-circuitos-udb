@@ -15,22 +15,26 @@ export const useAnalogWattmeter = ({
   maxDeflectionDegrees = 90,
 }: UseAnalogWattmeterProps) => {
   return useMemo(() => {
-    // 1. Full Scale Logic (Pmax)
-    const pMax = voltageRange * currentRange;
+    const vRanges = [3, 10, 30, 100, 300, 1000];
+    const iRanges = [0.1, 0.3, 1, 3, 10, 30];
+    
+    // Fallback in case of weird values, though UI strictly limits to these
+    let c = vRanges.indexOf(voltageRange);
+    let r = iRanges.indexOf(currentRange);
+    if (c === -1) c = 0;
+    if (r === -1) r = 0;
 
-    // 2. Scale Factor Calculation (Wattmeter Constant K)
-    // The student must multiply the visual reading of the scale by this factor.
-    // Since it has scales of 0-10 and 0-3, we expose both factors so the UI 
-    // can show the most appropriate one (the one with less complex decimals),
-    // or to simulate the student's mental exercise.
+    // The SO5127-1R6 hardware uses a precise checkerboard logic for its scales
+    const exponent = Math.floor((c + (r % 2)) / 2) + Math.floor(r / 2) - 1;
+    const recommendedFactor = Math.pow(10, exponent);
+    
+    const isScale10 = (r + c) % 2 !== 0;
+    const recommendedScale = isScale10 ? 10 : 3;
+    
+    const pMax = recommendedScale * recommendedFactor;
+    
     const factorScale10 = pMax / 10;
     const factorScale3 = pMax / 3;
-
-    // Heuristic to determine which scale the student "should" use visually:
-    // We prefer the scale that results in a factor that is a power of 10 (e.g. 0.1, 1, 10, 100)
-    // or an easy multiplier (e.g. x3, x30).
-    const recommendedScale = pMax.toString().match(/^[39]/) ? 3 : 10;
-    const recommendedFactor = recommendedScale === 3 ? factorScale3 : factorScale10;
 
     // 3. Needle Deflection Calculation
     // We map to a percentage between 0 and 100
