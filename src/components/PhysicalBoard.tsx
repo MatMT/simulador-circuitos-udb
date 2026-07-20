@@ -29,10 +29,11 @@ export default function PhysicalBoard({
   const [mousePos, setMousePos] = useState<{ x: number; y: number } | null>(null);
   const [inspectTerminalId, setInspectTerminalId] = useState<string | null>(null);
   const [activeLayerFilter] = useState<number>(0);
-  const [localWires, setLocalWires] = useState<Record<string, number>>({});
   const [draggingJunctionId, setDraggingJunctionId] = useState<string | null>(null);
+  const [draggedIdx, setDraggedIdx] = useState<number | null>(null);
+  const [dragOverIdx, setDragOverIdx] = useState<number | null>(null);
 
-  const { cables, terminals, airJunctions, floatingCableId, addCable, connectFloatingCable, disconnectCable, removeCable } = useCircuitStore();
+  const { cables, terminals, airJunctions, floatingCableId, addCable, connectFloatingCable, disconnectCable, removeCable, updateCableLayers, disconnectSpecificCable } = useCircuitStore();
 
   const cablesList = Object.values(cables);
   const activeTerminalId = floatingCableId ? cables[floatingCableId]?.startTerminalId : null;
@@ -139,11 +140,6 @@ export default function PhysicalBoard({
 
   const inspectedTerminal = inspectTerminalId ? getTerminalById(inspectTerminalId) : null;
   const inspectedWires = inspectTerminalId ? cablesList.filter(w => w.startTerminalId === inspectTerminalId || w.endTerminalId === inspectTerminalId) : [];
-
-  const toggleWireLayerLocal = (wireId: string, currentLayer: number) => {
-    const nextLayer = currentLayer + 1;
-    setLocalWires(prev => ({ ...prev, [wireId]: nextLayer }));
-  };
 
   const handleBoardClick = (e: React.MouseEvent<HTMLDivElement>) => {
     if (floatingCableId) {
@@ -312,7 +308,7 @@ export default function PhysicalBoard({
               const t2 = wire.endTerminalId ? resolveTerminal(wire.endTerminalId) : null;
               if (!t1 || !t2) return null;
 
-              const effectiveLayer = localWires[wire.id] || wire.layer || 1;
+              const effectiveLayer = wire.layer || 1;
               if (activeLayerFilter !== 0 && effectiveLayer !== activeLayerFilter) {
                 return (
                   <g key={wire.id} style={{ opacity: 0.15 }}>
@@ -458,7 +454,7 @@ export default function PhysicalBoard({
 
       {inspectTerminalId && inspectedTerminal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 backdrop-blur-sm p-4 animate-fade-in" onClick={() => setInspectTerminalId(null)}>
-          <div className="bg-slate-900 border border-sky-500/40 rounded-3xl p-6 max-w-lg w-full flex flex-col gap-4 shadow-2xl" onClick={e => e.stopPropagation()}>
+          <div className="bg-slate-900 border border-sky-500/40 rounded-3xl p-6 max-w-3xl w-full flex flex-col gap-4 shadow-2xl" onClick={e => e.stopPropagation()}>
             <div className="flex items-center justify-between border-b border-slate-800 pb-3">
               <div className="flex items-center gap-2">
                 <Info className="text-sky-400" size={20} />
@@ -471,43 +467,145 @@ export default function PhysicalBoard({
               </button>
             </div>
 
-            <div className="flex flex-col gap-2 max-h-60 overflow-y-auto pr-1">
-              {inspectedWires.map((wire, idx) => {
-                const tFrom = getTerminalById(wire.startTerminalId);
-                const tTo = wire.endTerminalId ? getTerminalById(wire.endTerminalId) : null;
-                const isOpposite = wire.startTerminalId === inspectTerminalId ? tTo : tFrom;
-                const effLayer = localWires[wire.id] || wire.layer || 1;
+            <div className="flex flex-col md:flex-row gap-6">
+              {/* Columna Izquierda: Lista arrastrable */}
+              <div className="flex-1 flex flex-col gap-2 max-h-80 overflow-y-auto pr-1">
+                {(() => {
+                  const sortedInspectedWires = [...inspectedWires].sort((a, b) => (b.layer || 1) - (a.layer || 1));
+                  
+                  return sortedInspectedWires.map((wire, idx) => {
+                    const tFrom = getTerminalById(wire.startTerminalId);
+                    const tTo = wire.endTerminalId ? getTerminalById(wire.endTerminalId) : null;
+                    const isOpposite = wire.startTerminalId === inspectTerminalId ? tTo : tFrom;
+                    const effLayer = wire.layer || 1;
+                    const isDragging = draggedIdx === idx;
+                    const isDragOver = dragOverIdx === idx;
 
-                return (
-                  <div key={wire.id} className="flex items-center justify-between p-3 rounded-xl bg-slate-800/90 border border-slate-700 text-xs font-mono">
-                    <div className="flex items-center gap-2.5">
-                      <div className="w-4 h-4 rounded-full border-2 border-white/60 shadow" style={{ backgroundColor: wire.color }} />
-                      <div className="flex flex-col">
-                        <span className="text-slate-100 font-bold">
-                          Cable #{idx + 1} ➔ Hacia: <strong className="text-sky-300">{isOpposite?.label || 'Borne externo'}</strong>
-                        </span>
-                        <span className="text-[10px] text-slate-400">
-                          Capa actual: Capa #{effLayer} ({effLayer === 1 ? 'Conexión Base Directa' : `Apilada en Paralelo ×${effLayer}`})
-                        </span>
+                    return (
+                      <div
+                        key={wire.id}
+                        draggable
+                        onDragStart={(e) => {
+                          setDraggedIdx(idx);
+                          e.dataTransfer.effectAllowed = 'move';
+                          e.dataTransfer.setData('text/plain', idx.toString());
+                        }}
+                        onDragEnter={(e) => {
+                          e.preventDefault();
+                          if (draggedIdx !== null && draggedIdx !== idx) setDragOverIdx(idx);
+                        }}
+                        onDragOver={(e) => e.preventDefault()}
+                        onDragEnd={() => { setDraggedIdx(null); setDragOverIdx(null); }}
+                        onDrop={(e) => {
+                          e.preventDefault();
+                          if (draggedIdx === null || draggedIdx === idx) {
+                            setDraggedIdx(null); setDragOverIdx(null);
+                            return;
+                          }
+                          const newWires = [...sortedInspectedWires];
+                          const [removed] = newWires.splice(draggedIdx, 1);
+                          newWires.splice(idx, 0, removed);
+                          
+                          const updates = newWires.map((w, i) => ({ cableId: w.id, layer: newWires.length - i }));
+                          updateCableLayers(updates);
+                          setDraggedIdx(null); setDragOverIdx(null);
+                        }}
+                        className={`flex items-center justify-between p-3 rounded-xl border text-xs font-mono transition-all cursor-move
+                          ${isDragging ? 'opacity-50 bg-slate-800 border-sky-500/50 scale-95' : 'bg-slate-800/90'}
+                          ${isDragOver ? 'border-t-2 border-t-amber-400' : 'border-slate-700 hover:border-slate-500'}
+                        `}
+                      >
+                        <div className="flex items-center gap-3">
+                          <div className="text-slate-500">
+                            <svg width="12" height="20" viewBox="0 0 12 20" fill="currentColor"><path d="M4 4a2 2 0 11-4 0 2 2 0 014 0zm6 0a2 2 0 11-4 0 2 2 0 014 0zm-6 6a2 2 0 11-4 0 2 2 0 014 0zm6 0a2 2 0 11-4 0 2 2 0 014 0zm-6 6a2 2 0 11-4 0 2 2 0 014 0zm6 0a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
+                          </div>
+                          <div className="w-4 h-4 rounded-full border-2 border-white/60 shadow" style={{ backgroundColor: wire.color }} />
+                          <div className="flex flex-col">
+                            <span className="text-slate-100 font-bold">
+                              Hacia: <strong className="text-sky-300">{isOpposite?.label || 'Borne externo'}</strong>
+                            </span>
+                            <span className="text-[10px] text-slate-400">
+                              Capa #{effLayer} ({effLayer === 1 ? 'Base Directa' : `Apilada en Paralelo ×${effLayer}`})
+                            </span>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center gap-1.5">
+                          <button onClick={() => { removeCable(wire.id); if (inspectedWires.length <= 1) setInspectTerminalId(null); }} className="px-2.5 py-1.5 bg-red-500/20 hover:bg-red-500 text-red-300 hover:text-white rounded-lg transition font-sans font-bold flex items-center gap-1 border border-red-500/40 cursor-pointer">
+                            <Trash2 size={13} />
+                          </button>
+                        </div>
                       </div>
-                    </div>
+                    );
+                  });
+                })()}
 
-                    <div className="flex items-center gap-1.5">
-                      <button onClick={() => toggleWireLayerLocal(wire.id, effLayer)} className="px-2 py-1 bg-slate-700 hover:bg-slate-600 text-slate-200 rounded-lg text-[11px] font-bold cursor-pointer">
-                        Capa {effLayer} ➔
-                      </button>
-                      <button onClick={() => { removeCable(wire.id); if (inspectedWires.length <= 1) setInspectTerminalId(null); }} className="px-2.5 py-1 bg-red-500/20 hover:bg-red-500 text-red-300 hover:text-white rounded-lg transition font-sans font-bold flex items-center gap-1 border border-red-500/40 cursor-pointer">
-                        <Trash2 size={13} />
-                      </button>
-                    </div>
+                {/* Dropzone to disconnect specific cable */}
+                <div
+                  onDragEnter={(e) => e.preventDefault()}
+                  onDragOver={(e) => {
+                    e.preventDefault();
+                    if (draggedIdx !== null) setDragOverIdx(-1);
+                  }}
+                  onDragLeave={() => {
+                    if (dragOverIdx === -1) setDragOverIdx(null);
+                  }}
+                  onDrop={(e) => {
+                    e.preventDefault();
+                    if (draggedIdx !== null && inspectTerminalId) {
+                      const sortedWires = [...inspectedWires].sort((a, b) => (b.layer || 1) - (a.layer || 1));
+                      const cableToDisconnect = sortedWires[draggedIdx];
+                      if (cableToDisconnect) {
+                        disconnectSpecificCable(cableToDisconnect.id, inspectTerminalId);
+                        setInspectTerminalId(null);
+                      }
+                    }
+                    setDraggedIdx(null);
+                    setDragOverIdx(null);
+                  }}
+                  className={`mt-2 p-4 border-2 border-dashed rounded-xl flex items-center justify-center transition-all
+                    ${dragOverIdx === -1 ? 'border-sky-400 bg-sky-900/30' : 'border-slate-700 bg-slate-800/30'}
+                  `}
+                >
+                  <span className={`text-xs font-mono font-bold ${dragOverIdx === -1 ? 'text-sky-300' : 'text-slate-500'}`}>
+                    ⤓ Suelta aquí para mantener flotando en el aire
+                  </span>
+                </div>
+
+                <div className="text-[10px] text-slate-500 mt-1 italic text-center">
+                  Arrastra los cables para reordenar sus capas físicamente.
+                </div>
+              </div>
+
+              {/* Columna Derecha: Vista Visual */}
+              <div className="w-full md:w-48 bg-slate-950/50 rounded-2xl border border-slate-800 flex flex-col items-center justify-end p-4 relative min-h-[200px] shadow-inner">
+                <span className="absolute top-3 text-[10px] text-slate-400 font-mono text-center uppercase tracking-wider font-bold">Vista Frontal<br/>del Borne</span>
+                <div className="flex flex-col-reverse items-center mt-6">
+                  {/* Base del Acrílico */}
+                  <div className="w-20 h-4 bg-slate-700 rounded-t-lg border-t-2 border-x-2 border-slate-400 mb-[-2px] z-0 shadow-[0_-2px_15px_rgba(0,0,0,0.6)] relative flex justify-center">
+                    <div className="w-4 h-2 bg-black/40 mt-1 rounded-sm" />
                   </div>
-                );
-              })}
+                  
+                  {[...inspectedWires].sort((a, b) => (a.layer || 1) - (b.layer || 1)).map((wire, idx) => (
+                    <div key={wire.id} className="relative flex flex-col items-center transition-all duration-300">
+                      {/* Cuerpo de la Banana */}
+                      <div className="w-14 h-11 rounded-sm shadow-[0_4px_10px_rgba(0,0,0,0.5)] border-b-4 border-black/30 flex items-center justify-center relative z-20" style={{ backgroundColor: wire.color }}>
+                        {/* Agujero Trasero */}
+                        <div className="w-4 h-4 rounded-full bg-black/50 shadow-inner border border-white/10" />
+                        {/* Salida del cable lateral */}
+                        <div className="absolute top-3 left-full w-10 h-3 rounded-r-full opacity-95 shadow-md border-y border-r border-black/20" style={{ backgroundColor: wire.color }} />
+                      </div>
+                      {/* Pin macho */}
+                      <div className="w-3 h-5 bg-gradient-to-b from-slate-200 to-slate-400 border-x border-slate-500 z-10 shadow-sm mb-[-2px]" />
+                    </div>
+                  ))}
+                </div>
+              </div>
             </div>
 
-            <div className="flex justify-end pt-2 border-t border-slate-800">
-              <button onClick={() => setInspectTerminalId(null)} className="px-4 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg text-xs font-semibold transition cursor-pointer">
-                Cerrar Modal
+            <div className="flex justify-end pt-2 border-t border-slate-800 mt-2">
+              <button onClick={() => setInspectTerminalId(null)} className="px-5 py-2 bg-sky-600 hover:bg-sky-500 text-white rounded-xl text-xs font-bold transition shadow-lg shadow-sky-500/20 cursor-pointer">
+                Listo
               </button>
             </div>
           </div>

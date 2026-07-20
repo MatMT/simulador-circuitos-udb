@@ -1,9 +1,5 @@
 import { CircuitState, TerminalId, CableId } from '../types/circuitState';
 
-/**
- * Desconecta un extremo de un cable de una terminal. 
- * El otro extremo se mantiene en su lugar, permitiendo la mecánica "flotante".
- */
 export const handleDisconnectCable = (
   state: CircuitState,
   terminalIdToDisconnect: TerminalId
@@ -14,7 +10,18 @@ export const handleDisconnectCable = (
 
   const cableId = terminal.connectedCableId;
   const cable = state.cables[cableId];
+  if (!cable) return state;
+
   const isStart = cable.startTerminalId === terminalIdToDisconnect;
+  const remainingTerminalId = isStart ? (cable.endTerminalId as TerminalId) : cable.startTerminalId;
+
+  let newLayer = cable.layer || 1;
+  if (remainingTerminalId) {
+    const remainingStackCount = Object.values(state.cables).filter(
+      (c) => (c.startTerminalId === remainingTerminalId || c.endTerminalId === remainingTerminalId) && c.id !== cableId
+    ).length;
+    newLayer = remainingStackCount + 1;
+  }
 
   return {
     ...state,
@@ -26,18 +33,56 @@ export const handleDisconnectCable = (
       ...state.cables,
       [cableId]: {
         ...cable,
-        // Por convención, movemos el terminal fijo a "start" y el "end" es el flotante (null)
-        startTerminalId: isStart ? (cable.endTerminalId as TerminalId) : cable.startTerminalId,
-        endTerminalId: null, 
+        startTerminalId: remainingTerminalId,
+        endTerminalId: null,
+        layer: newLayer,
       },
     },
     floatingCableId: cableId,
   };
 };
 
-/**
- * Conecta el cable que está "flotando" a una terminal nueva libre.
- */
+export const handleDisconnectSpecificCable = (
+  state: CircuitState,
+  cableId: CableId,
+  terminalIdToDisconnect: TerminalId
+): CircuitState => {
+  const terminal = state.terminals[terminalIdToDisconnect];
+  const cable = state.cables[cableId];
+  if (!terminal || !cable) return state;
+
+  const isStart = cable.startTerminalId === terminalIdToDisconnect;
+  const remainingTerminalId = isStart ? (cable.endTerminalId as TerminalId) : cable.startTerminalId;
+
+  let newLayer = cable.layer || 1;
+  if (remainingTerminalId) {
+    const remainingStackCount = Object.values(state.cables).filter(
+      (c) => (c.startTerminalId === remainingTerminalId || c.endTerminalId === remainingTerminalId) && c.id !== cableId
+    ).length;
+    newLayer = remainingStackCount + 1;
+  }
+
+  const newTerminals = { ...state.terminals };
+  if (terminal.connectedCableId === cableId) {
+    newTerminals[terminalIdToDisconnect] = { ...terminal, connectedCableId: null };
+  }
+
+  return {
+    ...state,
+    terminals: newTerminals,
+    cables: {
+      ...state.cables,
+      [cableId]: {
+        ...cable,
+        startTerminalId: remainingTerminalId,
+        endTerminalId: null,
+        layer: newLayer,
+      },
+    },
+    floatingCableId: cableId,
+  };
+};
+
 export const handleReconnectCable = (
   state: CircuitState,
   cableId: CableId,
@@ -46,15 +91,12 @@ export const handleReconnectCable = (
   const newTerminal = state.terminals[newTerminalId];
   const cable = state.cables[cableId];
 
-  // Falla si la terminal no existe o el cable no existe. Se permite sobreescribir para cables multiples.
   if (!newTerminal || !cable) return state;
 
-  // Prevenir que un cable se conecte a sí mismo (bucle en el mismo borne)
   if (cable.startTerminalId === newTerminalId) {
-    // Si lo conectan al mismo origen, simplemente eliminamos el cable (como si lo devolvieran)
     const newCables = { ...state.cables };
     delete newCables[cableId];
-    
+
     const newTerminals = { ...state.terminals };
     if (newTerminals[cable.startTerminalId] && newTerminals[cable.startTerminalId].connectedCableId === cableId) {
       newTerminals[cable.startTerminalId] = { ...newTerminals[cable.startTerminalId], connectedCableId: null };
@@ -68,6 +110,16 @@ export const handleReconnectCable = (
     };
   }
 
+  const startStackCount = Object.values(state.cables).filter(
+    (c) => (c.startTerminalId === cable.startTerminalId || c.endTerminalId === cable.startTerminalId) && c.id !== cableId
+  ).length;
+
+  const endStackCount = Object.values(state.cables).filter(
+    (c) => (c.startTerminalId === newTerminalId || c.endTerminalId === newTerminalId) && c.id !== cableId
+  ).length;
+
+  const newLayer = Math.max(startStackCount, endStackCount) + 1;
+
   return {
     ...state,
     terminals: {
@@ -78,7 +130,8 @@ export const handleReconnectCable = (
       ...state.cables,
       [cableId]: {
         ...cable,
-        endTerminalId: newTerminalId, // Sella la conexión
+        endTerminalId: newTerminalId,
+        layer: newLayer,
       },
     },
     floatingCableId: null,

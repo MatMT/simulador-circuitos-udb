@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { CircuitState, TerminalId, CableId, ComponentId, WireColor, Cable } from '../types/circuitState';
-import { handleDisconnectCable, handleReconnectCable } from '../utils/cablesLogic';
+import { handleDisconnectCable, handleDisconnectSpecificCable, handleReconnectCable } from '../utils/cablesLogic';
 import { Wire } from '../types/circuit';
 import { Component, MultimeterMode } from '../types/instruments';
 
@@ -17,6 +17,8 @@ interface CircuitStoreState extends CircuitState {
   registerComponent: (component: Component) => void;
   createAirJunction: (x: number, y: number) => void;
   updateAirJunction: (id: TerminalId, x: number, y: number) => void;
+  disconnectSpecificCable: (cableId: CableId, terminalId: TerminalId) => void;
+  updateCableLayers: (updates: { cableId: CableId; layer: number }[]) => void;
 }
 
 export const useCircuitStore = create<CircuitStoreState>((set, get) => ({
@@ -28,12 +30,12 @@ export const useCircuitStore = create<CircuitStoreState>((set, get) => ({
 
   addCable: (startTerminalId, color, layer, order) => set((state) => {
     if (state.floatingCableId) {
-        // If there's already a floating cable, we could delete it, but for simplicity let's just ignore
-        return state;
+      // If there's already a floating cable, we could delete it, but for simplicity let's just ignore
+      return state;
     }
 
     const newCableId = `cable-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`;
-    
+
     const terminal = state.terminals[startTerminalId] || {
       id: startTerminalId,
       componentId: 'unknown',
@@ -71,7 +73,7 @@ export const useCircuitStore = create<CircuitStoreState>((set, get) => ({
     if (!floatingCableId) return;
 
     const newJunctionId = `air-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`;
-    
+
     // Almacenar el empalme
     set({
       airJunctions: {
@@ -120,10 +122,28 @@ export const useCircuitStore = create<CircuitStoreState>((set, get) => ({
 
   disconnectCable: (terminalId) => set((state) => {
     const newState = handleDisconnectCable(state, terminalId);
-    
+
     // Auto-cleanup: Si terminalId era un AirJunction, revisamos si quedó con 0 cables
     if (terminalId.startsWith('air-')) {
       // Contar cables usando startTerminalId y endTerminalId
+      const connectedCount = Object.values(newState.cables).filter(
+        c => c.startTerminalId === terminalId || c.endTerminalId === terminalId
+      ).length;
+
+      if (connectedCount === 0) {
+        const newAirJunctions = { ...newState.airJunctions };
+        delete newAirJunctions[terminalId];
+        return { ...newState, airJunctions: newAirJunctions };
+      }
+    }
+    return newState;
+  }),
+
+  disconnectSpecificCable: (cableId, terminalId) => set((state) => {
+    const newState = handleDisconnectSpecificCable(state, cableId, terminalId);
+    
+    // Auto-cleanup: Si terminalId era un AirJunction, revisamos si quedó con 0 cables
+    if (terminalId.startsWith('air-')) {
       const connectedCount = Object.values(newState.cables).filter(
         c => c.startTerminalId === terminalId || c.endTerminalId === terminalId
       ).length;
@@ -140,7 +160,7 @@ export const useCircuitStore = create<CircuitStoreState>((set, get) => ({
   removeCable: (cableId) => set((state) => {
     const cable = state.cables[cableId];
     if (!cable) return state;
-    
+
     const newTerminals = { ...state.terminals };
     if (cable.startTerminalId && newTerminals[cable.startTerminalId]) {
       newTerminals[cable.startTerminalId] = { ...newTerminals[cable.startTerminalId], connectedCableId: null };
@@ -180,6 +200,16 @@ export const useCircuitStore = create<CircuitStoreState>((set, get) => ({
       newTerminals[k] = { ...newTerminals[k], connectedCableId: null };
     });
     return { cables: {}, floatingCableId: null, terminals: newTerminals, airJunctions: {} };
+  }),
+
+  updateCableLayers: (updates) => set((state) => {
+    const newCables = { ...state.cables };
+    updates.forEach(({ cableId, layer }) => {
+      if (newCables[cableId]) {
+        newCables[cableId] = { ...newCables[cableId], layer };
+      }
+    });
+    return { cables: newCables };
   }),
 
   setWattmeterRanges: (componentId, voltageRange, currentRange) => set((state) => {
@@ -225,7 +255,7 @@ export const useCircuitStore = create<CircuitStoreState>((set, get) => ({
         layer: w.layer || 1,
         order: w.order
       };
-      
+
       if (!newTerminals[w.fromTerminalId]) {
         newTerminals[w.fromTerminalId] = { id: w.fromTerminalId, componentId: 'unknown', pin: w.fromTerminalId, connectedCableId: w.id };
       } else {
@@ -246,12 +276,12 @@ export const useCircuitStore = create<CircuitStoreState>((set, get) => ({
   }),
 
   registerComponent: (component) => set((state) => {
-      return {
-          components: {
-              ...state.components,
-              [component.id]: component
-          }
-      };
+    return {
+      components: {
+        ...state.components,
+        [component.id]: component
+      }
+    };
   })
 }));
 
