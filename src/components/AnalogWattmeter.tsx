@@ -48,7 +48,7 @@ export default function AnalogWattmeter({ realPower }: AnalogWattmeterProps) {
       <div className="text-slate-200 font-black text-sm tracking-tight mt-1">VATÍMETRO SO5127-1R6</div>
       
       {/* Display Analógico */}
-      <div className="relative w-56 h-28 bg-[#fdfdfd] rounded-t-full border-[6px] border-slate-800 overflow-hidden shadow-inner flex justify-center items-end mt-2">
+      <div className="relative w-72 h-36 bg-[#fdfdfd] rounded-t-full border-[6px] border-slate-800 overflow-hidden shadow-inner flex justify-center items-end mt-2">
         {/* Scale Background */}
         <div className="absolute inset-0 opacity-10">
            {/* Grid lines for aesthetics could go here */}
@@ -56,12 +56,12 @@ export default function AnalogWattmeter({ realPower }: AnalogWattmeterProps) {
         
         {/* Aguja */}
         <div 
-          className={`absolute w-1.5 h-24 bg-[#e11d48] origin-bottom rounded-t-full transition-transform duration-300 ease-out shadow-md z-20 ${deflection.isClippingHigh ? 'animate-bounce' : ''}`}
+          className={`absolute w-2 h-32 bg-[#e11d48] origin-bottom rounded-t-full transition-transform duration-300 ease-out shadow-md z-20 ${deflection.isClippingHigh ? 'animate-bounce' : ''}`}
           style={{ bottom: '0px', transform: `rotate(${deflection.cssRotationDegrees}deg)` }}
         />
         
         {/* Base Aguja */}
-        <div className="absolute w-6 h-6 bg-slate-950 rounded-full bottom-[-10px] z-30 shadow-lg border-2 border-slate-700" />
+        <div className="absolute w-8 h-8 bg-slate-950 rounded-full bottom-[-16px] z-30 shadow-lg border-2 border-slate-700" />
         
         {/* Escala Superior (0-10) */}
         <div className="absolute inset-0 pointer-events-none z-10 flex justify-center items-end">
@@ -73,13 +73,13 @@ export default function AnalogWattmeter({ realPower }: AnalogWattmeterProps) {
             return (
               <div 
                 key={`top-${i}`} 
-                className="absolute origin-bottom h-[100px] flex flex-col items-center justify-start"
+                className="absolute origin-bottom h-[128px] flex flex-col items-center justify-start"
                 style={{ transform: `rotate(${angle}deg)`, bottom: '0px' }}
               >
-                <div className={`bg-slate-800 ${isMajor ? 'w-[1.5px] h-2.5' : isMedium ? 'w-[1.5px] h-1.5' : 'w-px h-1'}`} />
+                <div className={`bg-slate-800 ${isMajor ? 'w-[2px] h-3' : isMedium ? 'w-[1.5px] h-2' : 'w-px h-1.5'}`} />
                 {isMajor && (
                   <span 
-                    className="text-[9px] font-bold text-slate-800 mt-0.5 leading-none" 
+                    className="text-[10px] font-bold text-slate-800 mt-1 leading-none" 
                     style={{ transform: `rotate(${-angle}deg)` }}
                   >
                     {num}
@@ -99,14 +99,14 @@ export default function AnalogWattmeter({ realPower }: AnalogWattmeterProps) {
             const num = i / 10;
             return (
               <div 
-                key={`bot-${i}`} 
-                className="absolute origin-bottom h-[75px] flex flex-col items-center justify-start"
+                key={`bottom-${i}`} 
+                className="absolute origin-bottom h-[96px] flex flex-col items-center justify-start"
                 style={{ transform: `rotate(${angle}deg)`, bottom: '0px' }}
               >
-                <div className={`bg-slate-800 ${isMajor ? 'w-[1.5px] h-2.5' : isMedium ? 'w-[1.5px] h-1.5' : 'w-px h-1'}`} />
+                <div className={`bg-slate-800 ${isMajor ? 'w-[2px] h-3' : isMedium ? 'w-[1.5px] h-2' : 'w-px h-1.5'}`} />
                 {isMajor && (
                   <span 
-                    className="text-[9px] font-bold text-slate-800 mt-0.5 leading-none" 
+                    className="text-[10px] font-bold text-slate-800 mt-1 leading-none" 
                     style={{ transform: `rotate(${-angle}deg)` }}
                   >
                     {num}
@@ -199,9 +199,9 @@ export default function AnalogWattmeter({ realPower }: AnalogWattmeterProps) {
             })}
           </div>
         ))}
-          <div className="flex bg-slate-950 p-1 text-[8px] gap-2 items-center justify-center border-t border-slate-700 text-slate-400">
-            <div className="flex items-center gap-1"><div className="w-3 h-2 bg-slate-950 border border-slate-700"></div> SKALA 0-10</div>
-            <div className="flex items-center gap-1"><div className="w-3 h-2 bg-slate-100 border border-slate-400"></div> SKALA 0-3</div>
+          <div className="flex bg-slate-950 p-2 text-[10px] gap-4 items-center justify-center border-t border-slate-700 text-slate-400">
+            <div className="flex items-center gap-1.5"><div className="w-4 h-3 bg-slate-950 border border-slate-700"></div> SKALA 0-10</div>
+            <div className="flex items-center gap-1.5"><div className="w-4 h-3 bg-slate-100 border border-slate-400"></div> SKALA 0-3</div>
           </div>
         </div>
       </div>

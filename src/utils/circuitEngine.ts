@@ -357,7 +357,7 @@ export function solveCircuit(wires: Wire[], vin: number = 12, useStrictSigns: bo
   if (nodeO && nodeU) {
     const voltageO = nodeO.voltage;
     const voltageU = nodeU.voltage;
-    wattmeterPower = (voltageO - voltageU) * (-Iw_mA / 1000);
+    wattmeterPower = (voltageO - voltageU) * (Iw_mA / 1000);
   }
 
   // 5. Multimeter Logic

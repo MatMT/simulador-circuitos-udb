@@ -21,6 +21,7 @@ interface CircuitStoreState extends CircuitState {
   removeAirJunction: (id: TerminalId) => void;
   disconnectSpecificCable: (cableId: CableId, terminalId: TerminalId) => void;
   updateCableLayers: (updates: { cableId: CableId; layer: number }[]) => void;
+  snapAirJunctionToTerminal: (junctionId: TerminalId, terminalId: TerminalId) => void;
 }
 
 export const useCircuitStore = create<CircuitStoreState>()(temporal((set, get) => ({
@@ -199,6 +200,28 @@ export const useCircuitStore = create<CircuitStoreState>()(temporal((set, get) =
       airJunctions: newAirJunctions,
       floatingCableId: state.floatingCableId === cableId ? null : state.floatingCableId
     };
+  }),
+
+  snapAirJunctionToTerminal: (junctionId, terminalId) => set((state) => {
+    if (junctionId === terminalId) return state;
+    
+    const newCables = { ...state.cables };
+    
+    // update all cables that connect to this junction
+    Object.keys(newCables).forEach(cableId => {
+      const cable = newCables[cableId];
+      if (cable.startTerminalId === junctionId) {
+        newCables[cableId] = { ...cable, startTerminalId: terminalId };
+      }
+      if (cable.endTerminalId === junctionId) {
+        newCables[cableId] = { ...cable, endTerminalId: terminalId };
+      }
+    });
+
+    const newAirJunctions = { ...state.airJunctions };
+    delete newAirJunctions[junctionId];
+
+    return { cables: newCables, airJunctions: newAirJunctions };
   }),
 
   clearCables: () => set((state) => {

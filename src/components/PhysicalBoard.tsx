@@ -278,7 +278,7 @@ export default function PhysicalBoard({
       </div>
 
       <div
-        className="board-viewport mx-4 mb-4 rounded-3xl overflow-hidden border border-slate-800/80 shadow-2xl relative flex-1 min-h-[480px]"
+        className="board-viewport mx-4 mb-4 rounded-3xl overflow-hidden border border-slate-800/80 shadow-2xl relative flex-1 min-h-[480px] touch-none"
         onContextMenu={(e) => {
             e.preventDefault();
             if (floatingCableId) removeCable(floatingCableId);
@@ -301,13 +301,108 @@ export default function PhysicalBoard({
             }
           }
         }}
-        onMouseUp={() => {
+        onTouchMove={(e) => {
+          if (activeTerminalId || draggingJunctionId) {
+            const touch = e.touches[0];
+            const plate = e.currentTarget.querySelector('.acrylic-plate');
+            if (plate && touch) {
+              const pRect = plate.getBoundingClientRect();
+              const x = ((touch.clientX - pRect.left) / pRect.width) * 100;
+              const y = ((touch.clientY - pRect.top) / pRect.height) * 100;
+
+              if (draggingJunctionId) {
+                const clampedX = Math.max(0, Math.min(100, x));
+                const clampedY = Math.max(0, Math.min(100, y));
+                useCircuitStore.getState().updateAirJunction(draggingJunctionId, clampedX, clampedY);
+              } else if (activeTerminalId) {
+                setMousePos({ x, y });
+              }
+            }
+          }
+        }}
+        onMouseUp={(e) => {
+          if (draggingJunctionId) {
+            const elems = document.elementsFromPoint(e.clientX, e.clientY);
+            let targetTermId = null;
+            for (const el of elems) {
+              const terminalItem = el.closest('.terminal-item');
+              if (terminalItem) {
+                const tid = terminalItem.getAttribute('data-terminal-id');
+                if (tid && tid !== draggingJunctionId) {
+                  targetTermId = tid;
+                  break;
+                }
+              }
+            }
+            if (targetTermId) {
+              useCircuitStore.getState().snapAirJunctionToTerminal(draggingJunctionId, targetTermId);
+              if (navigator.vibrate) navigator.vibrate(50);
+            }
+
+            setDraggingJunctionId(null);
+            useCircuitStore.temporal.getState().resume();
+          }
+        }}
+        onTouchEnd={(e) => {
+          if (draggingJunctionId) {
+            if (e.changedTouches && e.changedTouches.length > 0) {
+              const touch = e.changedTouches[0];
+              const elems = document.elementsFromPoint(touch.clientX, touch.clientY);
+              let targetTermId = null;
+              for (const el of elems) {
+                const terminalItem = el.closest('.terminal-item');
+                if (terminalItem) {
+                  const tid = terminalItem.getAttribute('data-terminal-id');
+                  if (tid && tid !== draggingJunctionId) {
+                    targetTermId = tid;
+                    break;
+                  }
+                }
+              }
+              if (targetTermId) {
+                useCircuitStore.getState().snapAirJunctionToTerminal(draggingJunctionId, targetTermId);
+                if (navigator.vibrate) navigator.vibrate(50);
+              }
+            }
+
+            setDraggingJunctionId(null);
+            useCircuitStore.temporal.getState().resume();
+          }
+
+          if (floatingCableId && e.changedTouches && e.changedTouches.length > 0) {
+            const touch = e.changedTouches[0];
+            const elems = document.elementsFromPoint(touch.clientX, touch.clientY);
+            let targetTermId = null;
+            for (const el of elems) {
+              const terminalItem = el.closest('.terminal-item');
+              if (terminalItem) {
+                const tid = terminalItem.getAttribute('data-terminal-id');
+                if (tid) {
+                  targetTermId = tid;
+                  break;
+                }
+              }
+            }
+            if (targetTermId) {
+              // Simulate dropping the cable on this terminal
+              connectFloatingCable(targetTermId);
+              const proceduralSequence: WireColor[] = ['#ef4444', '#3b82f6', '#10b981', '#eab308', '#8b5cf6', '#f97316', '#111827'];
+              const currentIdx = proceduralSequence.indexOf(selectedColor as WireColor);
+              const nextColor = (currentIdx !== -1 && currentIdx < proceduralSequence.length - 1) 
+                ? proceduralSequence[currentIdx + 1] 
+                : proceduralSequence[0];
+              onSelectColor(selectedColor === 'eraser' ? '#ef4444' : nextColor);
+              if (navigator.vibrate) navigator.vibrate(50);
+            }
+          }
+        }}
+        onMouseLeave={() => {
           if (draggingJunctionId) {
             setDraggingJunctionId(null);
             useCircuitStore.temporal.getState().resume();
           }
         }}
-        onMouseLeave={() => {
+        onTouchCancel={() => {
           if (draggingJunctionId) {
             setDraggingJunctionId(null);
             useCircuitStore.temporal.getState().resume();
@@ -459,6 +554,7 @@ export default function PhysicalBoard({
               return (
                 <div
                   key={term.id}
+                  data-terminal-id={term.id}
                   className={`terminal-item ${isAirJunction ? 'air-junction-container' : ''}`}
                   style={{ left: `${term.x}%`, top: `${term.y}%`, cursor: isAirJunction ? 'grab' : 'pointer' }}
                   onMouseEnter={() => setHoveredTerminalId(term.id)}
@@ -491,10 +587,42 @@ export default function PhysicalBoard({
                       }, 400);
                     }
                   }}
+                  onTouchStart={(e) => {
+                    if (isAirJunction) {
+                      e.stopPropagation();
+                      setDraggingJunctionId(term.id);
+                      useCircuitStore.temporal.getState().pause();
+                      return;
+                    }
+
+                    if (floatingCableId || selectedColor === 'eraser') return;
+
+                    if (stackCount > 0) {
+                      longPressTriggeredRef.current = false;
+                      pressTimerRef.current = setTimeout(() => {
+                        longPressTriggeredRef.current = true;
+                        const wires = cablesList.filter(w => w.startTerminalId === term.id || w.endTerminalId === term.id);
+                        const sorted = wires.sort((a,b) => (b.layer || 1) - (a.layer || 1));
+                        if (sorted.length > 0) {
+                          useCircuitStore.getState().disconnectSpecificCable(sorted[0].id, term.id);
+                          if (navigator.vibrate) navigator.vibrate(50);
+                        }
+                      }, 400);
+                    }
+                  }}
                   onMouseUp={() => {
                     if (pressTimerRef.current) {
                       clearTimeout(pressTimerRef.current);
                       pressTimerRef.current = null;
+                    }
+                  }}
+                  onTouchEnd={(e) => {
+                    if (pressTimerRef.current) {
+                      clearTimeout(pressTimerRef.current);
+                      pressTimerRef.current = null;
+                    }
+                    if (longPressTriggeredRef.current) {
+                        e.preventDefault();
                     }
                   }}
                   onClick={(e) => {

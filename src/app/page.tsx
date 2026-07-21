@@ -216,17 +216,29 @@ export default function Home() {
               <span className="font-mono text-xs text-slate-400 font-bold whitespace-nowrap">Suministro (V):</span>
               <input
                 type="range"
-                min="1"
+                min="0"
                 max="30"
-                step="1"
+                step="0.1"
                 value={vin}
                 onChange={(e) => setVin(Number(e.target.value))}
                 className="flex-1 w-full h-1.5 bg-slate-800 rounded-lg cursor-pointer accent-sky-400"
-                title="Ajustar voltaje de fuente de 1V a 30V"
+                title="Ajustar voltaje"
               />
-              <span className="font-mono text-xs font-black text-sky-300 bg-sky-500/20 px-3 py-1 rounded-lg border border-sky-500/40 min-w-[56px] text-center">
-                {vin} V
-              </span>
+              <div className="flex items-center bg-sky-500/20 rounded-lg border border-sky-500/40 px-2 py-1 min-w-[70px] justify-center">
+                <input
+                  type="number"
+                  min="0"
+                  max="30"
+                  step="0.1"
+                  value={vin}
+                  onChange={(e) => {
+                    const val = parseFloat(e.target.value);
+                    if (!isNaN(val)) setVin(Math.min(30, Math.max(0, val)));
+                  }}
+                  className="bg-transparent text-sky-300 font-mono text-xs font-black w-8 text-right outline-none appearance-none"
+                />
+                <span className="text-sky-300 font-mono text-xs font-black ml-1">V</span>
+              </div>
               <div className="flex items-center gap-2 ml-2 pl-2 border-l border-slate-800">
                 <button
                   onClick={() => setIsInfoModalOpen(true)}
