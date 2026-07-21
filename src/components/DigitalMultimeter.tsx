@@ -20,6 +20,23 @@ export default function DigitalMultimeter({ value, error }: DigitalMultimeterPro
   const { components, setMultimeterMode, registerComponent } = useCircuitStore();
   const [history, setHistory] = useState<Measurement[]>([]);
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
+
+  useEffect(() => {
+    const saved = localStorage.getItem('udb_multimeter_history');
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved).map((item: any) => ({
+          ...item,
+          timestamp: new Date(item.timestamp)
+        }));
+        setHistory(parsed);
+      } catch (e) {}
+    }
+  }, []);
+
+  useEffect(() => {
+    localStorage.setItem('udb_multimeter_history', JSON.stringify(history));
+  }, [history]);
   const multimeterId = 'M1';
   const multimeter = components[multimeterId];
 
@@ -173,23 +190,35 @@ export default function DigitalMultimeter({ value, error }: DigitalMultimeterPro
             ) : (
               <>
                 <div className="max-h-48 overflow-y-auto">
-                  {history.map((item, idx) => (
-                    <div key={item.id} className={`flex items-center justify-between p-2.5 text-xs font-mono border-b border-slate-800/50 ${idx === 0 ? 'bg-sky-900/10' : ''}`}>
-                      <div className="flex flex-col gap-0.5">
-                        <span className="text-slate-400 text-[10px]">
-                          {item.timestamp.toLocaleTimeString()}
-                        </span>
-                        <span className="font-bold text-slate-200">
-                          {item.mode}: <span className="text-sky-300">{item.value} {item.unit}</span>
-                        </span>
+                  {Object.entries(history.reduce((acc, curr) => {
+                    const dateStr = curr.timestamp.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' });
+                    if (!acc[dateStr]) acc[dateStr] = [];
+                    acc[dateStr].push(curr);
+                    return acc;
+                  }, {} as Record<string, Measurement[]>)).map(([dateStr, items]) => (
+                    <div key={dateStr} className="mb-2">
+                      <div className="text-[9px] font-bold text-sky-400 bg-sky-900/20 px-3 py-1 uppercase tracking-widest sticky top-0 backdrop-blur-md border-y border-sky-900/40">
+                        {dateStr}
                       </div>
-                      <button 
-                        onClick={() => setHistory(h => h.filter(x => x.id !== item.id))}
-                        className="p-1.5 text-slate-500 hover:text-red-400 hover:bg-slate-800 rounded transition-colors cursor-pointer"
-                        title="Eliminar lectura"
-                      >
-                        <Trash2 size={14} />
-                      </button>
+                      {items.map((item, idx) => (
+                        <div key={item.id} className="flex items-center justify-between p-2.5 text-xs font-mono border-b border-slate-800/50 hover:bg-slate-800/30 transition-colors">
+                          <div className="flex flex-col gap-0.5">
+                            <span className="text-slate-500 text-[9px]">
+                              {item.timestamp.toLocaleTimeString()}
+                            </span>
+                            <span className="font-bold text-slate-200">
+                              {item.mode}: <span className="text-sky-300">{item.value} {item.unit}</span>
+                            </span>
+                          </div>
+                          <button 
+                            onClick={() => setHistory(h => h.filter(x => x.id !== item.id))}
+                            className="p-1.5 text-slate-500 hover:text-red-400 hover:bg-slate-800/80 rounded transition-colors cursor-pointer"
+                            title="Eliminar lectura"
+                          >
+                            <Trash2 size={14} />
+                          </button>
+                        </div>
+                      ))}
                     </div>
                   ))}
                 </div>
