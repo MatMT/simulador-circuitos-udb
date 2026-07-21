@@ -30,8 +30,8 @@ export default function Home() {
   const [isSaveModalOpen, setIsSaveModalOpen] = useState<boolean>(false);
   const [useStrictSigns, setUseStrictSigns] = useState<boolean>(true); // Siempre activado por defecto
   const [shareUrl, setShareUrl] = useState<string>('');
-  const [activeTab, setActiveTab] = useState<'datos' | 'instrumentos'>('datos');
-  const [activeInstrumentTab, setActiveInstrumentTab] = useState<'wattmeter' | 'multimeter'>('wattmeter');
+  const [activeTab, setActiveTab] = useState<'datos' | 'instrumentos'>('instrumentos');
+  const [activeInstrumentTab, setActiveInstrumentTab] = useState<'wattmeter' | 'multimeter'>('multimeter');
   const [isInfoModalOpen, setIsInfoModalOpen] = useState(false);
 
   useEffect(() => {
@@ -235,7 +235,7 @@ export default function Home() {
                     const val = parseFloat(e.target.value);
                     if (!isNaN(val)) setVin(Math.min(30, Math.max(0, val)));
                   }}
-                  className="bg-transparent text-sky-300 font-mono text-xs font-black w-8 text-right outline-none appearance-none"
+                  className="bg-transparent text-sky-300 font-mono text-xs font-black w-12 text-right outline-none appearance-none"
                 />
                 <span className="text-sky-300 font-mono text-xs font-black ml-1">V</span>
               </div>
@@ -262,18 +262,18 @@ export default function Home() {
 
           <div className="flex border-b border-slate-800/80 bg-slate-900/50">
             <button 
-              onClick={() => handleMainTabChange('datos')}
-              className={`flex-1 flex items-center justify-center gap-2 py-3.5 text-sm font-bold transition-all cursor-pointer ${activeTab === 'datos' ? 'bg-slate-800/80 text-sky-400 border-b-[3px] border-sky-400 shadow-inner' : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/30 border-b-[3px] border-transparent'}`}
-            >
-              <Activity size={18} />
-              Datos y Cálculos
-            </button>
-            <button 
               onClick={() => handleMainTabChange('instrumentos')}
               className={`flex-1 flex items-center justify-center gap-2 py-3.5 text-sm font-bold transition-all cursor-pointer ${activeTab === 'instrumentos' ? 'bg-slate-800/80 text-amber-400 border-b-[3px] border-amber-400 shadow-inner' : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/30 border-b-[3px] border-transparent'}`}
             >
               <Wrench size={18} />
               Banco de Instrumentos
+            </button>
+            <button 
+              onClick={() => handleMainTabChange('datos')}
+              className={`flex-1 flex items-center justify-center gap-2 py-3.5 text-sm font-bold transition-all cursor-pointer ${activeTab === 'datos' ? 'bg-slate-800/80 text-sky-400 border-b-[3px] border-sky-400 shadow-inner' : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/30 border-b-[3px] border-transparent'}`}
+            >
+              <Activity size={18} />
+              Datos y Cálculos
             </button>
           </div>
           
@@ -292,16 +292,16 @@ export default function Home() {
                 {/* Inner Instrument Tabs */}
                 <div className="flex w-full bg-slate-950 border-b border-slate-800 shrink-0">
                   <button
-                    onClick={() => handleInstTabChange('wattmeter')}
-                    className={`flex-1 py-3.5 px-4 text-sm font-extrabold uppercase tracking-widest transition-colors cursor-pointer ${activeInstrumentTab === 'wattmeter' ? 'bg-slate-900 text-amber-400 border-b-2 border-amber-400' : 'text-slate-500 hover:text-slate-300 hover:bg-slate-900/50'}`}
-                  >
-                    Vatímetro Analógico
-                  </button>
-                  <button
                     onClick={() => handleInstTabChange('multimeter')}
                     className={`flex-1 py-3.5 px-4 text-sm font-extrabold uppercase tracking-widest transition-colors cursor-pointer ${activeInstrumentTab === 'multimeter' ? 'bg-slate-900 text-amber-400 border-b-2 border-amber-400' : 'text-slate-500 hover:text-slate-300 hover:bg-slate-900/50'}`}
                   >
                     Multímetro Digital
+                  </button>
+                  <button
+                    onClick={() => handleInstTabChange('wattmeter')}
+                    className={`flex-1 py-3.5 px-4 text-sm font-extrabold uppercase tracking-widest transition-colors cursor-pointer ${activeInstrumentTab === 'wattmeter' ? 'bg-slate-900 text-amber-400 border-b-2 border-amber-400' : 'text-slate-500 hover:text-slate-300 hover:bg-slate-900/50'}`}
+                  >
+                    Vatímetro Analógico
                   </button>
                 </div>
                 
