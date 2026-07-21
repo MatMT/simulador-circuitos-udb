@@ -28,12 +28,12 @@ export const UDB_TERMINALS: Terminal[] = [
   // Bloque 1 Terminals
   { id: 'R1_T1', resistorId: 'R1', label: 'R1 (+)', type: 'resistor', x: 17, y: 21 },
   { id: 'R1_T2', resistorId: 'R1', label: 'R1 (-)', type: 'resistor', x: 33, y: 21 },
-  { id: 'R3_T1', resistorId: 'R3', label: 'R3 (+)', type: 'resistor', x: 12, y: 35 },
-  { id: 'R3_T2', resistorId: 'R3', label: 'R3 (-)', type: 'resistor', x: 12, y: 59 },
-  { id: 'R4_T1', resistorId: 'R4', label: 'R4 (+)', type: 'resistor', x: 38, y: 35 },
-  { id: 'R4_T2', resistorId: 'R4', label: 'R4 (-)', type: 'resistor', x: 38, y: 59 },
-  { id: 'R8_T1', resistorId: 'R8', label: 'R8 (+)', type: 'resistor', x: 17, y: 73 },
-  { id: 'R8_T2', resistorId: 'R8', label: 'R8 (-)', type: 'resistor', x: 33, y: 73 },
+  { id: 'R3_T1', resistorId: 'R3', label: 'R3 (+)', type: 'resistor', x: 11, y: 35 },
+  { id: 'R3_T2', resistorId: 'R3', label: 'R3 (-)', type: 'resistor', x: 11, y: 56 },
+  { id: 'R4_T1', resistorId: 'R4', label: 'R4 (+)', type: 'resistor', x: 39, y: 35 },
+  { id: 'R4_T2', resistorId: 'R4', label: 'R4 (-)', type: 'resistor', x: 39, y: 56 },
+  { id: 'R8_T1', resistorId: 'R8', label: 'R8 (+)', type: 'resistor', x: 17, y: 71 },
+  { id: 'R8_T2', resistorId: 'R8', label: 'R8 (-)', type: 'resistor', x: 33, y: 71 },
 
   // Columna Central Terminals
   { id: 'R5_T1', resistorId: 'R5', label: 'R5 (+)', type: 'resistor', x: 50, y: 33 },
@@ -42,22 +42,22 @@ export const UDB_TERMINALS: Terminal[] = [
   // Bloque 2 Terminals
   { id: 'R2_T1', resistorId: 'R2', label: 'R2 (+)', type: 'resistor', x: 67, y: 21 },
   { id: 'R2_T2', resistorId: 'R2', label: 'R2 (-)', type: 'resistor', x: 83, y: 21 },
-  { id: 'R6_T1', resistorId: 'R6', label: 'R6 (+)', type: 'resistor', x: 62, y: 35 },
-  { id: 'R6_T2', resistorId: 'R6', label: 'R6 (-)', type: 'resistor', x: 62, y: 59 },
-  { id: 'R7_T1', resistorId: 'R7', label: 'R7 (+)', type: 'resistor', x: 88, y: 35 },
-  { id: 'R7_T2', resistorId: 'R7', label: 'R7 (-)', type: 'resistor', x: 88, y: 59 },
-  { id: 'R9_T1', resistorId: 'R9', label: 'R9 (+)', type: 'resistor', x: 67, y: 73 },
-  { id: 'R9_T2', resistorId: 'R9', label: 'R9 (-)', type: 'resistor', x: 83, y: 73 },
+  { id: 'R6_T1', resistorId: 'R6', label: 'R6 (+)', type: 'resistor', x: 61, y: 35 },
+  { id: 'R6_T2', resistorId: 'R6', label: 'R6 (-)', type: 'resistor', x: 61, y: 56 },
+  { id: 'R7_T1', resistorId: 'R7', label: 'R7 (+)', type: 'resistor', x: 89, y: 35 },
+  { id: 'R7_T2', resistorId: 'R7', label: 'R7 (-)', type: 'resistor', x: 89, y: 56 },
+  { id: 'R9_T1', resistorId: 'R9', label: 'R9 (+)', type: 'resistor', x: 67, y: 71 },
+  { id: 'R9_T2', resistorId: 'R9', label: 'R9 (-)', type: 'resistor', x: 83, y: 71 },
 
   // Wattmeter W1 Terminals
-  { id: 'W1_O', label: 'W1 (O)', type: 'resistor', x: 17, y: 92 },
-  { id: 'W1_I', label: 'W1 (I)', type: 'resistor', x: 25, y: 92 },
-  { id: 'W1_U', label: 'W1 (U)', type: 'resistor', x: 33, y: 92 },
+  { id: 'W1_O', label: 'W1 (O)', type: 'resistor', x: 16, y: 92 },
+  { id: 'W1_I', label: 'W1 (I)', type: 'resistor', x: 24, y: 92 },
+  { id: 'W1_U', label: 'W1 (U)', type: 'resistor', x: 32, y: 92 },
 
   // Multimeter M1 Terminals
-  { id: 'M1_A', label: 'A', type: 'resistor', x: 67, y: 92 },
+  { id: 'M1_A', label: 'A', type: 'resistor', x: 66, y: 92 },
   { id: 'M1_COM', label: 'COM', type: 'resistor', x: 75, y: 92 },
-  { id: 'M1_V_OHMS', label: 'V/Ω', type: 'resistor', x: 83, y: 92 }
+  { id: 'M1_V_OHMS', label: 'V/Ω', type: 'resistor', x: 84, y: 92 }
 ];
 
 export function getTerminalById(id: string): Terminal | undefined {
@@ -159,7 +159,7 @@ export function buildNodes(wires: Wire[], multimeterMode: MultimeterMode = 'V'):
 function solveVoltages(nodes: ElectricalNode[], posIdx: number, negIdx: number, sourceVoltage: number): number[] {
   const numNodes = nodes.length;
   const voltages = new Array(numNodes).fill(0);
-  
+
   if (posIdx !== -1) voltages[posIdx] = sourceVoltage;
   if (negIdx !== -1) voltages[negIdx] = 0;
 
@@ -202,7 +202,7 @@ function solveVoltages(nodes: ElectricalNode[], posIdx: number, negIdx: number, 
 function getClusterLeavingCurrent(clusterRootId: string, wires: Wire[], nodes: ElectricalNode[], totalMainCurrent: number): number {
   const cluster = new Set<string>([clusterRootId]);
   let changed = true;
-  while(changed) {
+  while (changed) {
     changed = false;
     wires.forEach(w => {
       if (cluster.has(w.fromTerminalId) && !cluster.has(w.toTerminalId)) { cluster.add(w.toTerminalId); changed = true; }
@@ -217,19 +217,19 @@ function getClusterLeavingCurrent(clusterRootId: string, wires: Wire[], nodes: E
       const r = getResistorById(term.resistorId);
       const isT1 = tid.endsWith('_T1');
       const oppTermId = isT1 ? `${r.id}_T2` : `${r.id}_T1`;
-      
+
       const nodeThis = nodes.find(n => n.terminalIds.includes(tid));
       const nodeOpp = nodes.find(n => n.terminalIds.includes(oppTermId));
-      
+
       if (nodeThis && nodeOpp) {
         const vDrop = nodeThis.voltage - nodeOpp.voltage;
         const current_mA = (vDrop / r.value) * 1000;
         if (!cluster.has(oppTermId)) {
-           I_leaving_mA += current_mA;
+          I_leaving_mA += current_mA;
         }
       }
     }
-    
+
     if (tid === 'POWER_POS') I_leaving_mA += (-totalMainCurrent);
     if (tid === 'POWER_NEG') I_leaving_mA += (totalMainCurrent);
   });
@@ -268,7 +268,7 @@ export function solveCircuit(wires: Wire[], vin: number = 12, useStrictSigns: bo
   if (posNode && negNode && posNode === negNode) {
     let multErr: 'OL' | 'FUSE_BLOWN' | undefined = undefined;
     let msg = '⚠️ CORTOCIRCUITO DETECTADO: Fuente 1 (+) conectada directamente a Fuente 2 (-) sin carga.';
-    
+
     // Check if Ammeter caused the short
     if (multimeterMode === 'A') {
       const m1aNode = nodes.find(n => n.terminalIds.includes('M1_A'));
@@ -352,7 +352,7 @@ export function solveCircuit(wires: Wire[], vin: number = 12, useStrictSigns: bo
   const Iw_mA = getClusterLeavingCurrent('W1_I', wires, nodes, totalCurrent);
   const nodeO = nodes.find(n => n.terminalIds.includes('W1_O'));
   const nodeU = nodes.find(n => n.terminalIds.includes('W1_U'));
-  
+
   let wattmeterPower = 0;
   if (nodeO && nodeU) {
     const voltageO = nodeO.voltage;
@@ -362,11 +362,11 @@ export function solveCircuit(wires: Wire[], vin: number = 12, useStrictSigns: bo
 
   // 5. Multimeter Logic
   const multResult: { value: number; error?: 'OL' | 'FUSE_BLOWN' } = { value: 0 };
-  
+
   if (multimeterMode === 'V') {
     const nodeV = nodes.find(n => n.terminalIds.includes('M1_V_OHMS'));
     const nodeCOM = nodes.find(n => n.terminalIds.includes('M1_COM'));
-    
+
     // Si alguna de las dos puntas está al aire, no hay circuito cerrado para medir voltaje
     if (!nodeV || !nodeCOM) {
       multResult.value = 0;
@@ -380,20 +380,20 @@ export function solveCircuit(wires: Wire[], vin: number = 12, useStrictSigns: bo
   else if (multimeterMode === 'OHMS') {
     const nV = nodes.find(n => n.terminalIds.includes('M1_V_OHMS'))?.voltage || 0;
     const nCOM = nodes.find(n => n.terminalIds.includes('M1_COM'))?.voltage || 0;
-    
+
     if (Math.abs(nV - nCOM) > 0.01) {
       multResult.error = 'OL'; // Energized circuit protection
     } else {
       const ohmPosNode = nodes.find(n => n.terminalIds.includes('M1_V_OHMS'));
       const ohmNegNode = nodes.find(n => n.terminalIds.includes('M1_COM'));
-      
+
       if (ohmPosNode && ohmNegNode && ohmPosNode !== ohmNegNode) {
         const oPIdx = nodes.indexOf(ohmPosNode);
         const oNIdx = nodes.indexOf(ohmNegNode);
-        
+
         // RE-RUN SOLVER to measure Resistance with 1V injected
         const ohmVoltages = solveVoltages(nodes, oPIdx, oNIdx, 1.0);
-        
+
         // Sum current leaving ohmPosNode (the 1V source)
         let ohmCurrent_mA = 0;
         ohmPosNode.resistorConnections.forEach(conn => {
