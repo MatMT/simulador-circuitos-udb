@@ -6,11 +6,12 @@ import DynamicSchematic from '../components/DynamicSchematic';
 import CircuitTestBenchModal from '../components/CircuitTestBenchModal';
 import ShareCircuitModal from '../components/ShareCircuitModal';
 import SaveCircuitModal from '../components/SaveCircuitModal';
+import ImportCircuitModal from '../components/ImportCircuitModal';
 import OlaLabsCarousel from '../components/OlaLabsCarousel';
 import OlaLabsFooter from '../components/OlaLabsFooter';
 import { WireColor, Wire } from '../types/circuit';
 import { solveCircuit } from '../utils/circuitEngine';
-import { Zap, RotateCcw, BookOpen, Save, Activity, Wrench, Cpu, Sliders, Info, X, Share2 } from 'lucide-react';
+import { Zap, RotateCcw, BookOpen, Save, Activity, Wrench, Cpu, Sliders, Info, X, Share2, Download } from 'lucide-react';
 import { useCustomCircuits } from '../hooks/useCustomCircuits';
 import LZString from 'lz-string';
 import { CustomCircuit } from '../types/customCircuit';
@@ -28,6 +29,7 @@ export default function Home() {
   const [isPresetModalOpen, setIsPresetModalOpen] = useState<boolean>(false);
   const [isShareModalOpen, setIsShareModalOpen] = useState<boolean>(false);
   const [isSaveModalOpen, setIsSaveModalOpen] = useState<boolean>(false);
+  const [isImportModalOpen, setIsImportModalOpen] = useState<boolean>(false);
   const [useStrictSigns, setUseStrictSigns] = useState<boolean>(true); // Siempre activado por defecto
   const [shareUrl, setShareUrl] = useState<string>('');
   const [activeTab, setActiveTab] = useState<'datos' | 'instrumentos'>('instrumentos');
@@ -137,6 +139,15 @@ export default function Home() {
               {analysis.isComplete ? '● Lazo Medido' : '● Tablero Acrílico'}
             </span>
           </div>
+
+          <button
+            onClick={() => setIsImportModalOpen(true)}
+            className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold bg-slate-800 hover:bg-slate-700 text-sky-400 border border-slate-700 transition shadow cursor-pointer"
+            title="Importar desde JSON o Enlace"
+          >
+            <Download size={16} />
+            <span>Importar</span>
+          </button>
 
           <button
             onClick={handleShareCurrent}
@@ -353,6 +364,12 @@ export default function Home() {
         isOpen={isShareModalOpen}
         onClose={() => setIsShareModalOpen(false)}
         shareUrl={shareUrl}
+      />
+      
+      <ImportCircuitModal
+        isOpen={isImportModalOpen}
+        onClose={() => setIsImportModalOpen(false)}
+        onImport={handleLoadPreset}
       />
 
       {/* Info Modal para Signos Algebraicos */}

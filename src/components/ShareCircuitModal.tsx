@@ -76,9 +76,8 @@ export default function ShareCircuitModal({ isOpen, onClose, shareUrl }: ShareCi
             </div>
             <button
               onClick={handleCopy}
-              className={`p-2.5 rounded-xl text-white font-bold transition flex items-center gap-2 cursor-pointer ${
-                copied ? 'bg-emerald-600 hover:bg-emerald-500' : 'bg-sky-600 hover:bg-sky-500'
-              }`}
+              className={`p-2.5 rounded-xl text-white font-bold transition flex items-center gap-2 cursor-pointer ${copied ? 'bg-emerald-600 hover:bg-emerald-500' : 'bg-sky-600 hover:bg-sky-500'
+                }`}
             >
               {copied ? <Check size={18} /> : <Copy size={18} />}
             </button>
@@ -87,7 +86,7 @@ export default function ShareCircuitModal({ isOpen, onClose, shareUrl }: ShareCi
           {rawData && (
             <div className="w-full flex flex-col gap-2 mt-2 border-t border-slate-800/80 pt-4">
               <label className="text-xs font-bold text-slate-400 uppercase">
-                Datos RAW JSON (Para IAs)
+                Datos RAW JSON
               </label>
               <div className="w-full flex items-start gap-2">
                 <textarea
@@ -101,9 +100,8 @@ export default function ShareCircuitModal({ isOpen, onClose, shareUrl }: ShareCi
                     setCopiedRaw(true);
                     setTimeout(() => setCopiedRaw(false), 2000);
                   }}
-                  className={`p-2.5 rounded-xl text-white font-bold transition flex items-center justify-center cursor-pointer shrink-0 ${
-                    copiedRaw ? 'bg-emerald-600 hover:bg-emerald-500' : 'bg-slate-800 hover:bg-slate-700'
-                  }`}
+                  className={`p-2.5 rounded-xl text-white font-bold transition flex items-center justify-center cursor-pointer shrink-0 ${copiedRaw ? 'bg-emerald-600 hover:bg-emerald-500' : 'bg-slate-800 hover:bg-slate-700'
+                    }`}
                   title="Copiar JSON"
                 >
                   {copiedRaw ? <Check size={18} /> : <Copy size={18} />}
