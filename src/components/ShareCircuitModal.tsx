@@ -1,7 +1,8 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import QRCode from 'react-qr-code';
+import LZString from 'lz-string';
 import { X, Copy, Check, QrCode } from 'lucide-react';
 
 interface ShareCircuitModalProps {
@@ -12,6 +13,20 @@ interface ShareCircuitModalProps {
 
 export default function ShareCircuitModal({ isOpen, onClose, shareUrl }: ShareCircuitModalProps) {
   const [copied, setCopied] = useState(false);
+  const [copiedRaw, setCopiedRaw] = useState(false);
+
+  const rawData = useMemo(() => {
+    try {
+      const url = new URL(shareUrl);
+      const shareParam = url.searchParams.get('share');
+      if (shareParam) {
+        return LZString.decompressFromEncodedURIComponent(shareParam);
+      }
+    } catch (e) {
+      return null;
+    }
+    return null;
+  }, [shareUrl]);
 
   if (!isOpen) return null;
 
@@ -68,6 +83,34 @@ export default function ShareCircuitModal({ isOpen, onClose, shareUrl }: ShareCi
               {copied ? <Check size={18} /> : <Copy size={18} />}
             </button>
           </div>
+
+          {rawData && (
+            <div className="w-full flex flex-col gap-2 mt-2 border-t border-slate-800/80 pt-4">
+              <label className="text-xs font-bold text-slate-400 uppercase">
+                Datos RAW JSON (Para IAs)
+              </label>
+              <div className="w-full flex items-start gap-2">
+                <textarea
+                  readOnly
+                  value={rawData}
+                  className="flex-1 bg-slate-950/50 border border-slate-800 rounded-xl px-3 py-2 text-xs font-mono text-slate-400 h-24 resize-none outline-none shadow-inner"
+                />
+                <button
+                  onClick={() => {
+                    navigator.clipboard.writeText(rawData);
+                    setCopiedRaw(true);
+                    setTimeout(() => setCopiedRaw(false), 2000);
+                  }}
+                  className={`p-2.5 rounded-xl text-white font-bold transition flex items-center justify-center cursor-pointer shrink-0 ${
+                    copiedRaw ? 'bg-emerald-600 hover:bg-emerald-500' : 'bg-slate-800 hover:bg-slate-700'
+                  }`}
+                  title="Copiar JSON"
+                >
+                  {copiedRaw ? <Check size={18} /> : <Copy size={18} />}
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>
